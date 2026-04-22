@@ -41,6 +41,24 @@ export const moduleDefaultValues = {
   status: Status.ACTIVE,
 };
 
+/* ---------------- JOB ROLE ---------------- */
+export const jobRoleDefaultValues = {
+  name: "",
+  code: "",
+  description: "",
+  remark: "",
+  status: Status.ACTIVE,
+};
+
+/* ---------------- DEPARTMENT ---------------- */
+export const departmentDefaultValues = {
+  name: "",
+  code: "",
+  description: "",
+  remark: "",
+  status: Status.ACTIVE,
+};
+
 /* ---------------- WORK LOCATION ---------------- */
 export const workLocationDefaultValues = {
   name: "",

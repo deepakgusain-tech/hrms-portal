@@ -28,6 +28,30 @@ export const moduleSchema = z.object({
   updatedAt: z.string().nullable().optional(),
 });
 
+/* ---------------- JOB ROLE ---------------- */
+export const jobRoleSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+  code: z.string().min(1, "Code is required"),
+  description: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
+  status: z.nativeEnum(Status),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
+/* ---------------- DEPARTMENT ---------------- */
+export const departmentSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
+  code: z.string().min(1, "Code is required"),
+  description: z.string().nullable().optional(),
+  remark: z.string().nullable().optional(),
+  status: z.nativeEnum(Status),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
 /* ---------------- WORK LOCATION ---------------- */
 export const workLocationSchema = z.object({
   id: z.string().optional(),
