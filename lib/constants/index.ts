@@ -1,4 +1,4 @@
-import { Status } from "@/app/generated/prisma/enums";
+import { Status } from "@/app/generated/prisma/client";
 
 export const APP_NAME =
   process.env.NEXT_APP_APP_NAME ?? "HRMS";
@@ -38,5 +38,18 @@ export const moduleDefaultValues = {
   name: "",
   description: "",
   route: "",
+  status: Status.ACTIVE,
+};
+
+/* ---------------- WORK LOCATION ---------------- */
+export const workLocationDefaultValues = {
+  name: "",
+  code: "",
+  address: "",
+  city: "",
+  state: "",
+  country: "",
+  postalCode: "",
+  remark: "",
   status: Status.ACTIVE,
 };

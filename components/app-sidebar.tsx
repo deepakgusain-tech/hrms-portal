@@ -216,7 +216,7 @@ const menu = [
       },
       {
         name: "Work location",
-        url: "#",
+        url: "/work-location",
         icon: (
           <Briefcase
           />

@@ -44,6 +44,21 @@ model User {
   role      Role     @relation(fields: [roleId], references: [id])
 }
 
+model WorkLocation {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique
+  code        String   @unique
+  address     String
+  city        String
+  state       String
+  country     String
+  postalCode  String?
+  remark      String?
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model Module {
   id          String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String @unique(map: "module_name_idx")
