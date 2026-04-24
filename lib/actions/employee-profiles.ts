@@ -19,16 +19,11 @@ function toDate(value?: string | null) {
   return value ? new Date(value) : null;
 }
 
-function getOptionalRelation(id?: string) {
-  return id ? { connect: { id } } : undefined;
-}
-
 function getNextEmployeeCode(codes: string[]) {
   const nextNumber =
     codes.reduce((max, code) => {
       const match = /^emp-(\d+)$/i.exec(code);
       const number = match ? Number(match[1]) : 0;
-
       return Number.isFinite(number) ? Math.max(max, number) : max;
     }, 0) + 1;
 
@@ -54,7 +49,11 @@ async function generateEmployeeCode() {
 }
 
 export async function getNextEmployeeCodePreview() {
-  return generateEmployeeCode();
+  try {
+    return await generateEmployeeCode();
+  } catch {
+    return "emp-001";
+  }
 }
 
 function mapEmployeeProfile(record: {
@@ -62,6 +61,7 @@ function mapEmployeeProfile(record: {
   employeeId: string | null;
   employeeName: string;
   employeeCode: string;
+  companyId: string | null;
   phone: string;
   alternatePhone: string | null;
   gender: string | null;
@@ -77,19 +77,11 @@ function mapEmployeeProfile(record: {
   status: Status;
   createdAt: Date;
   updatedAt: Date;
-  employee?: {
-    firstName: string;
-    lastName: string;
-  } | null;
-  department?: {
-    name: string;
-  } | null;
-  jobRole?: {
-    name: string;
-  } | null;
-  workLocation?: {
-    name: string;
-  } | null;
+  employee?: { firstName: string; lastName: string } | null;
+  company?: { companyName: string } | null;
+  department?: { name: string } | null;
+  jobRole?: { name: string } | null;
+  workLocation?: { name: string } | null;
 }): EmployeeProfile {
   return {
     id: record.id,
@@ -100,6 +92,7 @@ function mapEmployeeProfile(record: {
         ? `${record.employee.firstName} ${record.employee.lastName}`.trim()
         : ""),
     employeeCode: record.employeeCode,
+    companyId: record.companyId ?? "",
     phone: record.phone,
     alternatePhone: record.alternatePhone ?? "",
     gender: record.gender ?? "",
@@ -116,6 +109,7 @@ function mapEmployeeProfile(record: {
     status: record.status,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
+    companyName: record.company?.companyName ?? "",
     departmentName: record.department?.name ?? "",
     jobRoleName: record.jobRole?.name ?? "",
     workLocationName: record.workLocation?.name ?? "",
@@ -127,6 +121,11 @@ const employeeProfileInclude = {
     select: {
       firstName: true,
       lastName: true,
+    },
+  },
+  company: {
+    select: {
+      companyName: true,
     },
   },
   department: {
@@ -148,40 +147,33 @@ const employeeProfileInclude = {
 
 export async function getEmployeeProfileOptions() {
   try {
-    const [employees, departments, jobRoles, workLocations] = await Promise.all([
-      prisma.user.findMany({
-        orderBy: { firstName: "asc" },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-        },
-      }),
-      prisma.department.findMany({
-        orderBy: { name: "asc" },
-        select: {
-          id: true,
-          name: true,
-        },
-      }),
-      prisma.jobRole.findMany({
-        orderBy: { name: "asc" },
-        select: {
-          id: true,
-          name: true,
-        },
-      }),
-      prisma.workLocation.findMany({
-        orderBy: { name: "asc" },
-        select: {
-          id: true,
-          name: true,
-        },
-      }),
-    ]);
+    const [employees, companies, departments, jobRoles, workLocations] =
+      await Promise.all([
+        prisma.user.findMany({
+          orderBy: { firstName: "asc" },
+          select: { id: true, firstName: true, lastName: true },
+        }),
+        prisma.company.findMany({
+          orderBy: { companyName: "asc" },
+          select: { id: true, companyName: true },
+        }),
+        prisma.department.findMany({
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        }),
+        prisma.jobRole.findMany({
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        }),
+        prisma.workLocation.findMany({
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        }),
+      ]);
 
     return {
       employees,
+      companies,
       departments,
       jobRoles,
       workLocations,
@@ -189,6 +181,7 @@ export async function getEmployeeProfileOptions() {
   } catch {
     return {
       employees: [],
+      companies: [],
       departments: [],
       jobRoles: [],
       workLocations: [],
@@ -216,9 +209,7 @@ export async function getEmployeeProfileSelectOptions() {
 export async function getEmployeeProfiles(): Promise<EmployeeProfile[]> {
   try {
     const records = await prisma.employeeProfile.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       include: employeeProfileInclude,
     });
 
@@ -234,6 +225,7 @@ export async function createEmployeeProfile(
   try {
     const record = employeeProfileSchema.parse(data);
     const employeeCode = await generateEmployeeCode();
+
     const hashedPassword =
       record.employeeId &&
       record.password &&
@@ -246,15 +238,19 @@ export async function createEmployeeProfile(
         data: {
           employeeName: record.employeeName.trim(),
           employeeCode,
+
+          employeeId: record.employeeId || null,
+          companyId: record.companyId || null,
+          departmentId: record.departmentId || null,
+          jobRoleId: record.jobRoleId || null,
+          workLocationId: record.workLocationId || null,
+
           phone: record.phone,
           alternatePhone: record.alternatePhone || null,
           gender: record.gender || null,
           dateOfBirth: toDate(record.dateOfBirth),
           joiningDate: new Date(record.joiningDate),
-          employee: getOptionalRelation(record.employeeId),
-          department: getOptionalRelation(record.departmentId),
-          jobRole: getOptionalRelation(record.jobRoleId),
-          workLocation: getOptionalRelation(record.workLocationId),
+
           address: record.address || null,
           emergencyContactName: record.emergencyContactName || null,
           emergencyContactPhone: record.emergencyContactPhone || null,
@@ -266,9 +262,7 @@ export async function createEmployeeProfile(
       if (record.employeeId && hashedPassword) {
         await tx.user.update({
           where: { id: record.employeeId },
-          data: {
-            password: hashedPassword,
-          },
+          data: { password: hashedPassword },
         });
       }
     });
@@ -320,6 +314,7 @@ export async function updateEmployeeProfile(
 ): Promise<ActionResponse> {
   try {
     const record = employeeProfileSchema.parse(data);
+
     const hashedPassword =
       record.employeeId &&
       record.password &&
@@ -329,7 +324,7 @@ export async function updateEmployeeProfile(
 
     const existingRecord = await prisma.employeeProfile.findUnique({
       where: { id },
-      select: { id: true, employeeCode: true },
+      select: { employeeCode: true },
     });
 
     if (!existingRecord) {
@@ -345,23 +340,19 @@ export async function updateEmployeeProfile(
         data: {
           employeeName: record.employeeName.trim(),
           employeeCode: record.employeeCode || existingRecord.employeeCode,
+
+          employeeId: record.employeeId || null,
+          companyId: record.companyId || null,
+          departmentId: record.departmentId || null,
+          jobRoleId: record.jobRoleId || null,
+          workLocationId: record.workLocationId || null,
+
           phone: record.phone,
           alternatePhone: record.alternatePhone || null,
           gender: record.gender || null,
           dateOfBirth: toDate(record.dateOfBirth),
           joiningDate: new Date(record.joiningDate),
-          employee: record.employeeId
-            ? { connect: { id: record.employeeId } }
-            : { disconnect: true },
-          department: record.departmentId
-            ? { connect: { id: record.departmentId } }
-            : { disconnect: true },
-          jobRole: record.jobRoleId
-            ? { connect: { id: record.jobRoleId } }
-            : { disconnect: true },
-          workLocation: record.workLocationId
-            ? { connect: { id: record.workLocationId } }
-            : { disconnect: true },
+
           address: record.address || null,
           emergencyContactName: record.emergencyContactName || null,
           emergencyContactPhone: record.emergencyContactPhone || null,
@@ -373,9 +364,7 @@ export async function updateEmployeeProfile(
       if (record.employeeId && hashedPassword) {
         await tx.user.update({
           where: { id: record.employeeId },
-          data: {
-            password: hashedPassword,
-          },
+          data: { password: hashedPassword },
         });
       }
     });

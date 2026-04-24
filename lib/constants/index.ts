@@ -4,12 +4,9 @@ import {
   Status,
 } from "@/app/generated/prisma/client";
 
-export const APP_NAME =
-  process.env.NEXT_APP_APP_NAME ?? "HRMS";
+export const APP_NAME = process.env.NEXT_APP_APP_NAME ?? "HRMS";
 
-export const APP_DESCRIPTION =
-  process.env.NEXT_APP_DESCRIPTION ??
-  "HRMS";
+export const APP_DESCRIPTION = process.env.NEXT_APP_DESCRIPTION ?? "HRMS";
 
 export const SERVER_URL =
   process.env.NEXT_APP_SERVER_URL ?? "http://localhost:3000";
@@ -119,6 +116,7 @@ export const employeeProfileDefaultValues = {
   employeeName: "",
   employeeCode: "",
   password: "",
+  companyId: "",
   phone: "",
   alternatePhone: "",
   gender: "",

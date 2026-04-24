@@ -46,6 +46,11 @@ type Option = {
   name: string;
 };
 
+type CompanyOption = {
+  id: string;
+  companyName: string;
+};
+
 type EmployeeOption = {
   id: string;
   firstName: string;
@@ -68,6 +73,7 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
   const [departments, setDepartments] = React.useState<Option[]>([]);
   const [jobRoles, setJobRoles] = React.useState<Option[]>([]);
   const [workLocations, setWorkLocations] = React.useState<Option[]>([]);
+  const [companies, setCompanies] = React.useState<CompanyOption[]>([]);
 
   const form = useForm<z.infer<typeof employeeProfileSchema>>({
     resolver: zodResolver(employeeProfileSchema),
@@ -92,6 +98,7 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
     getEmployeeProfileOptions().then((options) => {
       setEmployees(options.employees);
       setDepartments(options.departments);
+      setCompanies(options.companies);
       setJobRoles(options.jobRoles);
       setWorkLocations(options.workLocations);
     });
@@ -120,7 +127,7 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
         });
         return;
       }
-
+      console.log("submitted", values);
       toast.success("Success", {
         description: res.message,
       });
@@ -175,7 +182,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="employeeCode"
@@ -193,7 +199,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="password"
@@ -212,7 +217,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="phone"
@@ -226,7 +230,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="alternatePhone"
@@ -240,7 +243,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="gender"
@@ -266,7 +268,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="dateOfBirth"
@@ -280,7 +281,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="joiningDate"
@@ -295,6 +295,35 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="companyId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company</FormLabel>
+                <Select
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select company" />
+                    </SelectTrigger>
+                  </FormControl>
+
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.companyName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="departmentId"
@@ -325,7 +354,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="jobRoleId"
@@ -356,7 +384,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="workLocationId"
@@ -387,7 +414,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="emergencyContactName"
@@ -404,7 +430,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="emergencyContactPhone"
@@ -421,7 +446,6 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="status"

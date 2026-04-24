@@ -58,19 +58,20 @@ model User {
 }
 
 model Company {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyName String     @unique
-  companyCode String     @unique
-  email       String?    @unique
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyName String   @unique
+  companyCode String   @unique
+  email       String?  @unique
   phone       String
   website     String?
   address     String?
   remark      String?
-  status      Status     @default(ACTIVE)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  status      Status   @default(ACTIVE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  employers Employer[]
+  employers        Employer[]
+  employeeProfiles EmployeeProfile[]
 }
 
 model Employer {
@@ -188,14 +189,19 @@ model EmployeeProfile {
   employeeId            String?  @unique @db.Uuid
   employeeName          String
   employeeCode          String   @unique
+
+  companyId             String?  @db.Uuid
+
   phone                 String
   alternatePhone        String?
   gender                String?
   dateOfBirth           DateTime?
   joiningDate           DateTime
+
   departmentId          String?  @db.Uuid
   jobRoleId             String?  @db.Uuid
   workLocationId        String?  @db.Uuid
+
   address               String?
   emergencyContactName  String?
   emergencyContactPhone String?
@@ -204,10 +210,12 @@ model EmployeeProfile {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  employee     User?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  department   Department?   @relation(fields: [departmentId], references: [id])
-  jobRole      JobRole?      @relation(fields: [jobRoleId], references: [id])
-  workLocation WorkLocation? @relation(fields: [workLocationId], references: [id])
+  employee         User?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  company          Company?      @relation(fields: [companyId], references: [id])
+  department       Department?   @relation(fields: [departmentId], references: [id])
+  jobRole          JobRole?      @relation(fields: [jobRoleId], references: [id])
+  workLocation     WorkLocation? @relation(fields: [workLocationId], references: [id])
+
   employeeDocuments EmployeeDocument[]
   transferPromotions TransferPromotion[]
 }

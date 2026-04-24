@@ -14,6 +14,7 @@ async function main() {
   const employeePassword = await bcrypt.hash("employee123", 10);
   const employerPassword = await bcrypt.hash("employer123", 10);
 
+  // Roles
   const adminRole = await prisma.role.upsert({
     where: { name: "Admin" },
     update: {},
@@ -44,6 +45,7 @@ async function main() {
     },
   });
 
+  // Modules
   const modules = [
     { name: "Dashboard", description: "Dashboard Module", route: "/dashboard" },
     { name: "Users", description: "Users Module", route: "/users" },
@@ -108,6 +110,7 @@ async function main() {
     });
   }
 
+  // Users
   await prisma.user.upsert({
     where: { email: "admin@hrms.com" },
     update: {},
@@ -136,6 +139,7 @@ async function main() {
     },
   });
 
+  // Departments
   const itDept = await prisma.department.upsert({
     where: { code: "IT001" },
     update: {},
@@ -158,6 +162,7 @@ async function main() {
     },
   });
 
+  // Job Roles
   const developer = await prisma.jobRole.upsert({
     where: { code: "DEV001" },
     update: {},
@@ -180,6 +185,7 @@ async function main() {
     },
   });
 
+  // Locations
   const delhiOffice = await prisma.workLocation.upsert({
     where: { code: "DEL001" },
     update: {},
@@ -210,6 +216,22 @@ async function main() {
     },
   });
 
+  // Company (Create before EmployeeProfile)
+  const company = await prisma.company.upsert({
+    where: { companyCode: "CMP001" },
+    update: {},
+    create: {
+      companyName: "SY Associates",
+      companyCode: "CMP001",
+      email: "contact@syassociates.com",
+      phone: "9810012345",
+      website: "https://syassociates.com",
+      address: "Noida, Uttar Pradesh, India",
+      status: Status.ACTIVE,
+    },
+  });
+
+  // Employee Profile
   const employeeProfile = await prisma.employeeProfile.upsert({
     where: { employeeCode: "EMP001" },
     update: {},
@@ -217,20 +239,27 @@ async function main() {
       employeeId: employeeUser.id,
       employeeName: "Rahul Sharma",
       employeeCode: "EMP001",
+
+      companyId: company.id,
+
       phone: "9876543210",
       alternatePhone: "9876500000",
       gender: "Male",
       joiningDate: new Date(),
+
       departmentId: itDept.id,
       jobRoleId: developer.id,
       workLocationId: delhiOffice.id,
+
       address: "Delhi, India",
       emergencyContactName: "Ramesh Sharma",
       emergencyContactPhone: "9999999999",
+
       status: Status.ACTIVE,
     },
   });
 
+  // Employee Documents
   const existingDoc = await prisma.employeeDocument.findFirst({
     where: {
       employeeId: employeeProfile.id,
@@ -261,6 +290,7 @@ async function main() {
     });
   }
 
+  // Transfer / Promotion
   const existingTransfer = await prisma.transferPromotion.findFirst({
     where: {
       employeeId: employeeProfile.id,
@@ -284,20 +314,7 @@ async function main() {
     });
   }
 
-  const company = await prisma.company.upsert({
-    where: { companyCode: "CMP001" },
-    update: {},
-    create: {
-      companyName: "SY Associates",
-      companyCode: "CMP001",
-      email: "contact@syassociates.com",
-      phone: "9810012345",
-      website: "https://syassociates.com",
-      address: "Noida, Uttar Pradesh, India",
-      status: Status.ACTIVE,
-    },
-  });
-
+  // Employer
   await prisma.employer.upsert({
     where: { email: "employer@hrms.com" },
     update: {},

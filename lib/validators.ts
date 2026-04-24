@@ -202,6 +202,7 @@ export const employeeProfileSchema = z.object({
     z.string().min(6, "Password should be at least 6 characters long"),
     z.literal(""),
   ]).optional(),
+  companyId: z.string().min(1, "Company is required"),
   phone: z.string().min(1, "Phone is required"),
   alternatePhone: z.string().optional(),
   gender: z.string().optional(),

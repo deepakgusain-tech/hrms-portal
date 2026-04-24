@@ -38,6 +38,11 @@ export const getEmployeeProfileColumns = ({
       cell: ({ row }) => row.original.jobRoleName || "-",
     },
     {
+      accessorKey: "companyName",
+      header: "Company Name",
+      cell: ({ row }) => row.original.companyName || "-",
+    },
+    {
       accessorKey: "workLocationName",
       header: "Work Location",
       cell: ({ row }) => row.original.workLocationName || "-",
