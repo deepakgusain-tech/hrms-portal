@@ -1,6 +1,6 @@
 "use client";
 
-import { ExperienceType, Status } from "@/app/generated/prisma/client";
+import { ExperienceType, Status } from "@prisma/client";
 import {
   createEmployeeDocument,
   updateEmployeeDocument,

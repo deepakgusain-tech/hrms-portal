@@ -2,7 +2,7 @@ import {
   ExperienceType,
   MovementType,
   Status,
-} from "@/app/generated/prisma/client";
+} from "@prisma/client";
 import { z } from "zod";
 
 /* ---------------- AUTH ---------------- */

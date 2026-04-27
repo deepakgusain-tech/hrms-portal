@@ -1,6 +1,6 @@
 "use client";
 
-import { Status } from "@/app/generated/prisma/client";
+import { Status } from "@prisma/client";
 import {
   createEmployeeProfile,
   getNextEmployeeCodePreview,

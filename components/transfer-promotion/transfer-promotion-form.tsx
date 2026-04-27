@@ -1,6 +1,6 @@
 "use client";
 
-import { MovementType, Status } from "@/app/generated/prisma/client";
+import { MovementType, Status } from "@prisma/client";
 import {
   createTransferPromotion,
   updateTransferPromotion,

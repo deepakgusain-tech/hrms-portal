@@ -2,7 +2,7 @@ import {
   ExperienceType,
   MovementType,
   Status,
-} from "@/app/generated/prisma/client";
+} from "@prisma/client";
 
 export const APP_NAME = process.env.NEXT_APP_APP_NAME ?? "HRMS";
 

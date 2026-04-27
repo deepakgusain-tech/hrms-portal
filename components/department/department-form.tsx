@@ -8,7 +8,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import z from "zod";
 import { toast } from "sonner";
 
-import { Status } from "@/app/generated/prisma";
+import { Status } from "@prisma/client";
 import { createDepartment, updateDepartment } from "@/lib/actions/department";
 import { departmentDefaultValues } from "@/lib/constants";
 import { departmentSchema } from "@/lib/validators";

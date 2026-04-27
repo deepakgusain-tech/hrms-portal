@@ -1,6 +1,6 @@
 "use client";
 
-import { Status } from "@/app/generated/prisma/client";
+import { Status } from "@prisma/client";
 import { getCompanyOptions } from "@/lib/actions/companies";
 import { createEmployer, updateEmployer } from "@/lib/actions/employers";
 import { employerDefaultValues } from "@/lib/constants";

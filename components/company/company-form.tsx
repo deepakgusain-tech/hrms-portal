@@ -1,6 +1,6 @@
 "use client";
 
-import { Status } from "@/app/generated/prisma/client";
+import { Status } from "@prisma/client";
 import { createCompany, updateCompany } from "@/lib/actions/companies";
 import { companyDefaultValues } from "@/lib/constants";
 import { companySchema } from "@/lib/validators";

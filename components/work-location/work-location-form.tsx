@@ -8,7 +8,7 @@ import { workLocationDefaultValues } from "@/lib/constants";
 import { workLocationSchema } from "@/lib/validators";
 import { WorkLocation } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Status } from "@/app/generated/prisma/client";
+import { Status } from "@prisma/client";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";

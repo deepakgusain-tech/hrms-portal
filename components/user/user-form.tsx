@@ -19,7 +19,7 @@ import { createUser, updateUser } from "@/lib/actions/users";
 import { getRoles } from "@/lib/actions/role";
 import { Role, User } from "@/types";
 import { userDefaultValues } from "@/lib/constants";
-import { Status } from "@/app/generated/prisma/client";
+import { Status } from "@prisma/client";
 
 const UserForm = ({ data, update = false }: { data?: User, update: boolean }) => {
   const router = useRouter();
