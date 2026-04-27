@@ -277,3 +277,13 @@ export const employerSchema = z.object({
 export const createEmployerSchema = employerSchema.extend({
   password: z.string().min(6, "Password should be at least 6 characters long"),
 });
+
+/* ---------------- CONFIGURATION ---------------- */
+export const configurationSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
+  logo: z.any().optional(),
+  favicon: z.any().optional(),
+  email: z.string().optional(),
+  password: z.string().optional(),
+});

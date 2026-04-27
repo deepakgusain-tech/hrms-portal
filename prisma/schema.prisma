@@ -232,6 +232,15 @@ model Module {
   updatedAt DateTime @updatedAt @db.Timestamp(6)
 }
 
+model Configuration {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String?
+  logo     String?
+  favicon  String?
+  email    String?
+  password String?
+}
+
 model RoleModule {
   id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   roleId   String @db.Uuid

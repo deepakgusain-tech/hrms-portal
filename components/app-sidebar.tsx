@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Image from "next/image"
-import Link from "next/link"
+import * as React from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   ArrowRightLeft,
   Briefcase,
@@ -10,13 +10,14 @@ import {
   Gauge,
   IdCard,
   LayoutGrid,
+  Settings,
   User2Icon,
   UserCog,
   Users2Icon,
-} from "lucide-react"
+} from "lucide-react";
 
-import { NavUser } from "@/components/nav-user"
-import { Switcher } from "@/components/switcher"
+import { NavUser } from "@/components/nav-user";
+import { Switcher } from "@/components/switcher";
 import {
   Sidebar,
   SidebarContent,
@@ -26,168 +27,171 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 
 type SidebarUser = {
-  name?: string
-  email?: string
-  avatar?: string
-}
+  name?: string;
+  email?: string;
+  avatar?: string;
+};
 
-type SidebarRole = string | undefined
+type SidebarRole = string | undefined;
+
+type AppConfig = {
+  name?: string | null;
+  logo?: string | null;
+};
 
 type MenuItem = {
-  name: string
-  url: string
-  icon: React.ReactNode
-}
+  name: string;
+  url: string;
+  icon: React.ReactNode;
+};
 
 type MenuGroup = {
-  name: string
-  icon: React.ReactNode
-  children: MenuItem[]
-}
+  name: string;
+  icon: React.ReactNode;
+  children?: MenuItem[];
+  url?: string;
+};
 
 const menu: MenuGroup[] = [
   {
     name: "Dashboard",
-    icon: <Gauge />,
+    icon: <Gauge size={18} />,
     children: [
-      {
-        name: "Overview",
-        url: "/dashboard",
-        icon: <Gauge />,
-      },
+      { name: "Overview", url: "/dashboard", icon: <Gauge size={18} /> },
       {
         name: "Employee Dashboard",
         url: "/employee-dashboard",
-        icon: <Users2Icon />,
+        icon: <Users2Icon size={18} />,
       },
     ],
   },
   {
     name: "Employee Management",
-    icon: <Users2Icon />,
+    icon: <Users2Icon size={18} />,
     children: [
       {
-        name: "Employee profiles",
+        name: "Employee Profiles",
         url: "/employee-profiles",
-        icon: <Users2Icon />,
+        icon: <Users2Icon size={18} />,
       },
       {
-        name: "Dept & org chart",
+        name: "Dept & Org Chart",
         url: "/department",
-        icon: <Building2 />,
+        icon: <Building2 size={18} />,
       },
       {
-        name: "Work location",
+        name: "Work Location",
         url: "/work-location",
-        icon: <Briefcase />,
+        icon: <Briefcase size={18} />,
       },
       {
-        name: "Employee ID & docs",
+        name: "Employee ID & Docs",
         url: "/employee-documents",
-        icon: <IdCard />,
+        icon: <IdCard size={18} />,
       },
       {
-        name: "Transfer & promotion",
+        name: "Transfer & Promotion",
         url: "/transfer-promotion",
-        icon: <ArrowRightLeft />,
+        icon: <ArrowRightLeft size={18} />,
       },
     ],
   },
   {
     name: "User Management",
-    icon: <User2Icon />,
+    icon: <User2Icon size={18} />,
     children: [
-      {
-        name: "User",
-        url: "/users",
-        icon: <User2Icon />,
-      },
-      {
-        name: "Role",
-        url: "/roles",
-        icon: <UserCog />,
-      },
-      {
-        name: "Module",
-        url: "/module",
-        icon: <LayoutGrid />,
-      },
+      { name: "User", url: "/users", icon: <User2Icon size={18} /> },
+      { name: "Role", url: "/roles", icon: <UserCog size={18} /> },
+      { name: "Module", url: "/module", icon: <LayoutGrid size={18} /> },
     ],
   },
   {
     name: "Employer Management",
-    icon: <Building2 />,
+    icon: <Building2 size={18} />,
     children: [
-      {
-        name: "Company",
-        url: "/companies",
-        icon: <Building2 />,
-      },
-      {
-        name: "Employer",
-        url: "/employers",
-        icon: <UserCog />,
-      },
+      { name: "Company", url: "/companies", icon: <Building2 size={18} /> },
+      { name: "Employer", url: "/employers", icon: <UserCog size={18} /> },
     ],
   },
-]
+  {
+    name: "Configuration",
+    icon: <Settings size={18} />,
+    url: "/configuration",
+  },
+];
 
-function getMenuByRole(role?: SidebarRole) {
+function getMenuByRole(role?: SidebarRole): MenuGroup[] {
   if (role?.toLowerCase() === "employee") {
     return [
       {
         name: "Dashboard",
-        icon: <Gauge />,
+        icon: <Gauge size={18} />,
         children: [
           {
             name: "Employee Dashboard",
             url: "/employee-dashboard",
-            icon: <Users2Icon />,
+            icon: <Users2Icon size={18} />,
           },
         ],
       },
-    ] satisfies MenuGroup[]
+    ];
   }
 
-  return menu
+  return menu;
 }
 
 export function AppSidebar({
   user,
   role,
+  config,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user?: SidebarUser
-  role?: SidebarRole
+  user?: SidebarUser;
+  role?: SidebarRole;
+  config?: AppConfig;
 }) {
   const navUser = {
     name: user?.name || "User",
     email: user?.email || "user@example.com",
     avatar: user?.avatar || "",
-  }
-  const filteredMenu = getMenuByRole(role)
-  const homeHref = role?.toLowerCase() === "employee" ? "/employee-dashboard" : "/dashboard"
+  };
+
+  const filteredMenu = getMenuByRole(role);
+
+  const homeHref =
+    role?.toLowerCase() === "employee"
+      ? "/employee-dashboard"
+      : "/dashboard";
+
+  const companyName = config?.name?.trim() || "SY ASSOCIATES";
+  const logoSrc = config?.logo?.trim() || "";
 
   return (
     <Sidebar collapsible="icon" {...props}>
+      {/* Header */}
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="p-2">
+            <SidebarMenuButton asChild className="p-2 h-auto">
               <Link href={homeHref}>
-                <div className="flex items-center gap-2">
-                  <Image
-                    src="/sy.png"
-                    alt="logo"
-                    width={28}
-                    height={28}
-                    className="rounded-md"
-                  />
-                  <span className="text-sm font-semibold whitespace-nowrap group-data-[collapsible=icon]:hidden">
-                    SY ASSOCIATES
+                <div className="flex items-center gap-2 min-w-0">
+                  {logoSrc ? (
+                    <Image
+                      src={logoSrc}
+                      alt="Company Logo"
+                      width={28}
+                      height={28}
+                      className="rounded-md object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-md bg-gray-300 shrink-0" />
+                  )}
+
+                  <span className="text-sm font-semibold truncate group-data-[collapsible=icon]:hidden">
+                    {companyName}
                   </span>
                 </div>
               </Link>
@@ -196,17 +200,32 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
+      {/* Menu */}
       <SidebarContent className="p-2 space-y-2">
-        {filteredMenu.map((group) => (
-          <Switcher key={group.name} menu={group} />
-        ))}
+        {filteredMenu.map((group) =>
+          group.children ? (
+            <Switcher key={group.name} menu={group} />
+          ) : (
+            <SidebarMenu key={group.name}>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href={group.url!}>
+                    {group.icon}
+                    <span>{group.name}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          )
+        )}
       </SidebarContent>
 
+      {/* Footer */}
       <SidebarFooter>
         <NavUser user={navUser} />
       </SidebarFooter>
 
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
