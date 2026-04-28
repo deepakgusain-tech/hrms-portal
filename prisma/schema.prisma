@@ -252,11 +252,3 @@ model RoleModule {
   @@unique([roleId, moduleId])
 }
 
-model Configuration {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name     String?
-  logo     String?
-  favicon  String?
-  email    String?
-  password String?
-}
