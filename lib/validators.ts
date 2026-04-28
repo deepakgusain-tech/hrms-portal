@@ -2,6 +2,9 @@ import {
   ExperienceType,
   MovementType,
   Status,
+  ProjectStatus,
+  TaskStatus,
+  Priority
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -286,4 +289,47 @@ export const configurationSchema = z.object({
   favicon: z.any().optional(),
   email: z.string().optional(),
   password: z.string().optional(),
+});
+
+/* ---------------- PROJECT ---------------- */
+export const projectSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Project is required"),
+  description: z.string().optional(),
+  startDate: z.union([z.date().min(1, "Start Date is required"), z.string().nullable()]),
+  endDate: z.union([z.date().min(1, "Start Date is required"), z.string().nullable()]),
+  status: z.enum(Object.values(ProjectStatus)),
+  createdById: z.string().min(1, "CreatedBy is required"),
+});
+
+/* ---------------- PROJECT MEMBER ---------------- */
+export const projectMemberSchema = z.object({
+  id: z.string().optional(),
+  projectId: z.string().min(1, "Project is required"),
+  employeeId: z.string().min(1, "Employee is required"),
+  assignedAt: z.union([z.date().optional(), z.string().nullable()]),
+});
+
+/* ---------------- TASK ---------------- */
+export const taskSchema = z.object({
+  id: z.string().optional(),
+  projectId: z.string().min(1, "Project is required"),
+  assignedToId: z.string().min(1, "Assigned Employee is required"),
+
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+
+  status: z.enum(Object.values(TaskStatus)),
+  priority: z.enum(Object.values(Priority)),
+
+  startDate: z.union([z.date().min(1, "Start Date is required"), z.string().nullable()]),
+  dueDate: z.union([z.date().min(1, "Due Date is required"), z.string().nullable()]),
+});
+
+/* ---------------- TASK COMMENT ---------------- */
+export const taskCommentSchema = z.object({
+  id: z.string().optional(),
+  projectId: z.string().min(1, "Project is required"),
+  employeeId: z.string().min(1, "Employee is required"),
+  comment: z.string().min(1, "Comment is required"),
 });

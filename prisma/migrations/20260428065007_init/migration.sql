@@ -7,6 +7,15 @@ CREATE TYPE "MovementType" AS ENUM ('TRANSFER', 'PROMOTION', 'TRANSFER_PROMOTION
 -- CreateEnum
 CREATE TYPE "ExperienceType" AS ENUM ('FRESHER', 'EXPERIENCED');
 
+-- CreateEnum
+CREATE TYPE "ProjectStatus" AS ENUM ('PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE', 'BLOCKED');
+
+-- CreateEnum
+CREATE TYPE "Priority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+
 -- CreateTable
 CREATE TABLE "Role" (
     "id" UUID NOT NULL DEFAULT gen_random_uuid(),
@@ -209,6 +218,71 @@ CREATE TABLE "RoleModule" (
     CONSTRAINT "RoleModule_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "Configuration" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "name" TEXT,
+    "logo" TEXT,
+    "favicon" TEXT,
+    "email" TEXT,
+    "password" TEXT,
+
+    CONSTRAINT "Configuration_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Project" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "startDate" TIMESTAMP(3) NOT NULL,
+    "endDate" TIMESTAMP(3),
+    "status" "ProjectStatus" NOT NULL DEFAULT 'PLANNING',
+    "createdById" UUID NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectMember" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "projectId" UUID NOT NULL,
+    "employeeId" UUID NOT NULL,
+    "assignedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProjectMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Task" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "projectId" UUID NOT NULL,
+    "assignedToId" UUID,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "TaskStatus" NOT NULL DEFAULT 'TODO',
+    "priority" "Priority" NOT NULL DEFAULT 'MEDIUM',
+    "startDate" TIMESTAMP(3),
+    "dueDate" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskComment" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "taskId" UUID NOT NULL,
+    "employeeId" UUID NOT NULL,
+    "comment" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TaskComment_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "Role_name_key" ON "Role"("name");
 
@@ -266,6 +340,21 @@ CREATE UNIQUE INDEX "Module_route_key" ON "Module"("route");
 -- CreateIndex
 CREATE UNIQUE INDEX "RoleModule_roleId_moduleId_key" ON "RoleModule"("roleId", "moduleId");
 
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectMember_projectId_employeeId_key" ON "ProjectMember"("projectId", "employeeId");
+
+-- CreateIndex
+CREATE INDEX "Task_projectId_idx" ON "Task"("projectId");
+
+-- CreateIndex
+CREATE INDEX "Task_assignedToId_idx" ON "Task"("assignedToId");
+
+-- CreateIndex
+CREATE INDEX "TaskComment_taskId_idx" ON "TaskComment"("taskId");
+
+-- CreateIndex
+CREATE INDEX "TaskComment_employeeId_idx" ON "TaskComment"("employeeId");
+
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
@@ -304,3 +393,24 @@ ALTER TABLE "RoleModule" ADD CONSTRAINT "RoleModule_roleId_fkey" FOREIGN KEY ("r
 
 -- AddForeignKey
 ALTER TABLE "RoleModule" ADD CONSTRAINT "RoleModule_moduleId_fkey" FOREIGN KEY ("moduleId") REFERENCES "Module"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Project" ADD CONSTRAINT "Project_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "EmployeeProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "EmployeeProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_assignedToId_fkey" FOREIGN KEY ("assignedToId") REFERENCES "EmployeeProfile"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskComment" ADD CONSTRAINT "TaskComment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskComment" ADD CONSTRAINT "TaskComment_employeeId_fkey" FOREIGN KEY ("employeeId") REFERENCES "EmployeeProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

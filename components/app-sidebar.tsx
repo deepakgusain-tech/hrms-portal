@@ -7,6 +7,7 @@ import {
   ArrowRightLeft,
   Briefcase,
   Building2,
+  FolderArchive,
   Gauge,
   IdCard,
   LayoutGrid,
@@ -114,6 +115,16 @@ const menu: MenuGroup[] = [
     children: [
       { name: "Company", url: "/companies", icon: <Building2 size={18} /> },
       { name: "Employer", url: "/employers", icon: <UserCog size={18} /> },
+    ],
+  },
+  {
+    name: "Project Management",
+    icon: <FolderArchive size={18} />,
+    children: [
+      { name: "Project Creation", url: "/projects", icon: <Building2 size={18} /> },
+      { name: "Project Members", url: "/project-members", icon: <UserCog size={18} /> },
+      { name: "Task Creation", url: "/tasks", icon: <UserCog size={18} /> },
+
     ],
   },
   

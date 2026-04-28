@@ -22,6 +22,28 @@ enum ExperienceType {
   EXPERIENCED
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 model Role {
   id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String   @unique
@@ -212,6 +234,10 @@ model EmployeeProfile {
 
   employeeDocuments  EmployeeDocument[]
   transferPromotions TransferPromotion[]
+  projects           Project[]
+  projectMembers     ProjectMember[]
+  tasks              Task[]
+  taskComments       TaskComment[]
 }
 
 model Module {
@@ -225,15 +251,6 @@ model Module {
 
   createdAt DateTime @default(now()) @db.Timestamp(6)
   updatedAt DateTime @updatedAt @db.Timestamp(6)
-}
-
-model Configuration {
-  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name     String?
-  logo     String?
-  favicon  String?
-  email    String?
-  password String?
 }
 
 model RoleModule {
@@ -252,3 +269,89 @@ model RoleModule {
   @@unique([roleId, moduleId])
 }
 
+model Configuration {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String?
+  logo     String?
+  favicon  String?
+  email    String?
+  password String?
+}
+
+model Project {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+
+  startDate DateTime
+  endDate   DateTime?
+
+  status ProjectStatus @default(PLANNING)
+
+  createdById String @db.Uuid
+
+  createdBy EmployeeProfile @relation(fields: [createdById], references: [id])
+
+  members ProjectMember[]
+  tasks   Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectMember {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId  String @db.Uuid
+  employeeId String @db.Uuid
+
+  assignedAt DateTime @default(now())
+
+  project  Project         @relation(fields: [projectId], references: [id])
+  employee EmployeeProfile @relation(fields: [employeeId], references: [id])
+
+  @@unique([projectId, employeeId])
+}
+
+model Task {
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId    String @db.Uuid
+  assignedToId String? @db.Uuid
+
+  title       String
+  description String?
+
+  status   TaskStatus @default(TODO)
+  priority Priority   @default(MEDIUM)
+
+  startDate DateTime?
+  dueDate   DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  assignedTo EmployeeProfile? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  comments TaskComment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([assignedToId])
+}
+
+model TaskComment {
+  id          String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId      String @db.Uuid
+  employeeId  String @db.Uuid
+
+  comment     String
+
+  task        Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  employee    EmployeeProfile   @relation(fields: [employeeId], references: [id])
+
+  createdAt   DateTime          @default(now())
+
+  @@index([taskId])
+  @@index([employeeId])
+}

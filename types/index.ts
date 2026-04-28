@@ -8,7 +8,11 @@ import {
   employerSchema,
   jobRoleSchema,
   moduleSchema,
+  projectMemberSchema,
+  projectSchema,
   roleSchema,
+  taskCommentSchema,
+  taskSchema,
   transferPromotionSchema,
   userSchema,
   workLocationSchema,
@@ -51,4 +55,7 @@ export type EmployeeProfile = z.infer<typeof employeeProfileSchema> & {
   workLocationName?: string;
 };
 
-export type Configuration = z.infer<typeof configurationSchema>
+export type Project = z.infer<typeof projectSchema>
+export type ProjectMember = z.infer<typeof projectMemberSchema>
+export type Task = z.infer<typeof taskSchema>
+export type TaskComment = z.infer<typeof taskCommentSchema>

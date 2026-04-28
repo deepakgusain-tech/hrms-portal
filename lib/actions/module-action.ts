@@ -36,7 +36,7 @@ export async function createModule(data: any): Promise<ActionResponse> {
   try {
     const module = moduleSchema.parse(data);
 
-    const route = `/admin/${module.name.toLowerCase().replace(/\s+/g, "-").replace("&", "")}`;
+    const route = `/${module.name.toLowerCase().replace(/\s+/g, "-").replace("&", "")}`;
 
     await prisma.module.create({
       data: {
@@ -92,7 +92,7 @@ export async function updateModule(
   try {
     const module = moduleSchema.parse(data);
 
-    const route = `/admin/${module.name.toLowerCase().replace(/\s+/g, "-").replace("&", "")}`;
+    const route = `/${module.name.toLowerCase().replace(/\s+/g, "-").replace("&", "")}`;
 
     await prisma.module.update({
       where: { id },
