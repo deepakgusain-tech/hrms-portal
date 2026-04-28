@@ -10,7 +10,18 @@ import { employeeDocumentDefaultValues } from "@/lib/constants";
 import { employeeDocumentSchema } from "@/lib/validators";
 import { EmployeeDocument } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  Loader2,
+  Upload,
+  Trash2,
+  Plus,
+  FileText,
+  GraduationCap,
+  Briefcase,
+  User,
+  IdCard,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
@@ -54,11 +65,20 @@ type EmployeeOption = {
   employeeCode: string;
 };
 
+const fieldClass =
+  "h-12 w-full rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-cyan-300 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 outline-none";
+
+const textAreaClass =
+  "min-h-28 w-full rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-cyan-300 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 outline-none";
+
+const cardClass =
+  "rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm space-y-5";
+
 const experienceFileFields = [
-  { name: "experienceLetterFileUrl", label: "Experience Letter Upload" },
-  { name: "salarySlip1FileUrl", label: "Salary Slip 1 Upload" },
-  { name: "salarySlip2FileUrl", label: "Salary Slip 2 Upload" },
-  { name: "salarySlip3FileUrl", label: "Salary Slip 3 Upload" },
+  { name: "experienceLetterFileUrl", label: "Experience Letter" },
+  { name: "salarySlip1FileUrl", label: "Salary Slip 1" },
+  { name: "salarySlip2FileUrl", label: "Salary Slip 2" },
+  { name: "salarySlip3FileUrl", label: "Salary Slip 3" },
 ] as const;
 
 const createEducationEntry = () => ({
@@ -78,11 +98,11 @@ const createExperienceEntry = () => ({
   salarySlip3FileUrl: "",
 });
 
-type EmployeeDocumentFormInput = z.input<typeof employeeDocumentSchema>;
-type EmployeeDocumentFormValues = z.output<typeof employeeDocumentSchema>;
+type InputType = z.input<typeof employeeDocumentSchema>;
+type OutputType = z.output<typeof employeeDocumentSchema>;
 
 type ImageFieldPath = Extract<
-  FieldPath<EmployeeDocumentFormInput>,
+  FieldPath<InputType>,
   | "aadhaarFileUrl"
   | "panFileUrl"
   | `educationEntries.${number}.marksheetFileUrl`
@@ -96,7 +116,7 @@ const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Failed to read image"));
+    reader.onerror = () => reject();
     reader.readAsDataURL(file);
   });
 
@@ -107,14 +127,10 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
   const [employees, setEmployees] = React.useState<EmployeeOption[]>([]);
   const [isPending, startTransition] = React.useTransition();
 
-  const form = useForm<
-    EmployeeDocumentFormInput,
-    unknown,
-    EmployeeDocumentFormValues
-  >({
+  const form = useForm<InputType, unknown, OutputType>({
     resolver: zodResolver(employeeDocumentSchema),
     defaultValues: (data ??
-      employeeDocumentDefaultValues) as EmployeeDocumentFormInput,
+      employeeDocumentDefaultValues) as InputType,
   });
 
   const experienceType = useWatch({
@@ -142,16 +158,12 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
   });
 
   useEffect(() => {
-    if (data) {
-      form.reset(data);
-    }
-  }, [data, form]);
+    getEmployeeProfileSelectOptions().then(setEmployees);
+  }, []);
 
   useEffect(() => {
-    getEmployeeProfileSelectOptions().then((records) => {
-      setEmployees(records);
-    });
-  }, []);
+    if (data) form.reset(data);
+  }, [data, form]);
 
   useEffect(() => {
     if (!educationFields.length) {
@@ -164,10 +176,9 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
       if (!experienceFields.length) {
         appendExperience(createExperienceEntry());
       }
-      return;
+    } else {
+      replaceExperience([]);
     }
-
-    replaceExperience([]);
   }, [
     experienceType,
     experienceFields.length,
@@ -175,8 +186,8 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
     replaceExperience,
   ]);
 
-  const onSubmit: SubmitHandler<EmployeeDocumentFormValues> = async (
-    values,
+  const onSubmit: SubmitHandler<OutputType> = async (
+    values
   ) => {
     startTransition(async () => {
       const res =
@@ -185,22 +196,20 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
           : await createEmployeeDocument(values);
 
       if (!res.success) {
-        toast.error("Error", {
-          description: res.message,
-        });
+        toast.error(res.message);
         return;
       }
 
-      toast.success("Success", {
-        description: res.message,
-      });
-
+      toast.success(res.message);
       router.push("/employee-documents");
       router.refresh();
     });
   };
 
-  const renderImageUploadField = (name: ImageFieldPath, label: string) => (
+  const renderUpload = (
+    name: ImageFieldPath,
+    label: string
+  ) => (
     <FormField
       control={form.control}
       name={name}
@@ -210,42 +219,57 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
 
           <FormControl>
             <div className="space-y-3">
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
+              <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50 px-4 py-4 text-sm font-medium text-cyan-700 transition hover:bg-cyan-100">
+                <Upload className="h-4 w-4" />
+                Upload File
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file =
+                      e.target.files?.[0];
+                    if (!file) return;
 
-                  try {
-                    const base64 = await readFileAsDataUrl(file);
-                    field.onChange(base64);
-                  } catch {
-                    toast.error("Unable to read file");
-                  }
-                }}
-              />
+                    try {
+                      const base64 =
+                        await readFileAsDataUrl(
+                          file
+                        );
+                      field.onChange(base64);
+                    } catch {
+                      toast.error(
+                        "Unable to read file"
+                      );
+                    }
+                  }}
+                />
+              </label>
 
-              {field.value ? (
+              {field.value && (
                 <div className="space-y-2">
                   <Image
                     src={field.value}
                     alt={label}
-                    width={200}
-                    height={120}
+                    width={220}
+                    height={140}
                     unoptimized
-                    className="h-32 w-full rounded-md border object-cover md:w-48"
+                    className="h-36 w-full rounded-2xl border object-cover md:w-56"
                   />
 
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => field.onChange("")}
+                    className="rounded-xl"
+                    onClick={() =>
+                      field.onChange("")
+                    }
                   >
-                    Remove Image
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remove
                   </Button>
                 </div>
-              ) : null}
+              )}
             </div>
           </FormControl>
 
@@ -257,254 +281,269 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Employee Basic */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="employeeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Employee Name</FormLabel>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6"
+      >
+        {/* Employee */}
+        <div className={cardClass}>
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-cyan-500" />
+            <h3 className="text-lg font-semibold text-slate-800">
+              Employee Details
+            </h3>
+          </div>
 
-                <Select
-                  value={field.value || undefined}
-                  onValueChange={(value) => {
-                    const selected = employees.find(
-                      (item) => item.id === value,
-                    );
-
-                    field.onChange(value);
-
-                    form.setValue("employeeCode", selected?.employeeCode ?? "");
-                  }}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                  </FormControl>
-
-                  <SelectContent>
-                    {employees.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.employeeName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="employeeCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Employee ID</FormLabel>
-                <FormControl>
-                  <Input readOnly {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Documents Card */}
-        <div className="rounded-xl border p-4 space-y-4">
-          <h3 className="text-lg font-semibold">Documents</h3>
-
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-5 md:grid-cols-2">
             <FormField
               control={form.control}
-              name="aadhaarNumber"
+              name="employeeId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Aadhaar Number</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter Aadhaar Number" {...field} />
-                  </FormControl>
+                  <FormLabel>
+                    Employee Name
+                  </FormLabel>
+
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(value) => {
+                      const selected =
+                        employees.find(
+                          (e) =>
+                            e.id === value
+                        );
+
+                      field.onChange(value);
+
+                      form.setValue(
+                        "employeeCode",
+                        selected?.employeeCode ??
+                          ""
+                      );
+                    }}
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        className={
+                          fieldClass
+                        }
+                      >
+                        <SelectValue placeholder="Select employee" />
+                      </SelectTrigger>
+                    </FormControl>
+
+                    <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
+                      {employees.map((e) => (
+                        <SelectItem
+                          key={e.id}
+                          value={e.id}
+                        >
+                          {e.employeeName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            {renderImageUploadField("aadhaarFileUrl", "Aadhaar Upload")}
+            <FormField
+              control={form.control}
+              name="employeeCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Employee ID
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      readOnly
+                      className={
+                        fieldClass
+                      }
+                      {...field}
+                      value={
+                        field.value ??
+                        ""
+                      }
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Documents */}
+        <div className={cardClass}>
+          <div className="flex items-center gap-2">
+            <IdCard className="h-5 w-5 text-cyan-500" />
+            <h3 className="text-lg font-semibold text-slate-800">
+              Identity Documents
+            </h3>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="aadhaarNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Aadhaar Number
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      className={
+                        fieldClass
+                      }
+                      placeholder="Enter Aadhaar Number"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {renderUpload(
+              "aadhaarFileUrl",
+              "Aadhaar Upload"
+            )}
 
             <FormField
               control={form.control}
               name="panNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>PAN Number</FormLabel>
+                  <FormLabel>
+                    PAN Number
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter PAN Number" {...field} />
+                    <Input
+                      className={
+                        fieldClass
+                      }
+                      placeholder="Enter PAN Number"
+                      {...field}
+                    />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
 
-            {renderImageUploadField("panFileUrl", "PAN Upload")}
+            {renderUpload(
+              "panFileUrl",
+              "PAN Upload"
+            )}
           </div>
         </div>
 
         {/* Education */}
-        <div className="rounded-xl border p-4 space-y-4">
+        <div className={cardClass}>
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">Education Details</h3>
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-5 w-5 text-cyan-500" />
+              <h3 className="text-lg font-semibold text-slate-800">
+                Education Details
+              </h3>
+            </div>
 
             <Button
               type="button"
               variant="outline"
-              onClick={() => appendEducation(createEducationEntry())}
+              className="rounded-xl"
+              onClick={() =>
+                appendEducation(
+                  createEducationEntry()
+                )
+              }
             >
-              +
+              <Plus className="mr-2 h-4 w-4" />
+              Add
             </Button>
           </div>
 
-          {educationFields.map((item, index) => (
-            <div key={item.id} className="rounded-xl border p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-medium">Education {index + 1}</h4>
+          {educationFields.map(
+            (item, index) => (
+              <div
+                key={item.id}
+                className="rounded-2xl border border-slate-200 p-5 space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold">
+                    Education{" "}
+                    {index + 1}
+                  </h4>
 
-                {educationFields.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => removeEducation(index)}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid gap-6 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name={`educationEntries.${index}.degree`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Degree</FormLabel>
-                      <FormControl>
-                        <Input placeholder="B.Tech / MBA" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {educationFields.length >
+                    1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() =>
+                        removeEducation(
+                          index
+                        )
+                      }
+                    >
+                      Remove
+                    </Button>
                   )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name={`educationEntries.${index}.college`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>College</FormLabel>
-                      <FormControl>
-                        <Input placeholder="College name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name={`educationEntries.${index}.year`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="2024" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name={`educationEntries.${index}.marks`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Marks</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={
-                            typeof field.value === "number" ||
-                            typeof field.value === "string"
-                              ? field.value
-                              : ""
-                          }
-                          onChange={(e) =>
-                            field.onChange(
-                              e.target.value === ""
-                                ? undefined
-                                : Number(e.target.value),
-                            )
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="space-y-2">
-                  {renderImageUploadField(
-                    `educationEntries.${index}.marksheetFileUrl`,
-                    "Marksheet Upload",
-                  )}
-
-                  <p className="text-sm text-muted-foreground">
-                    Note: Convert all marksheets into one PDF, then upload it
-                    here.
-                  </p>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
 
-        {/* Experience Type */}
-        <div className="grid gap-6 md:grid-cols-2">
+        {/* Experience */}
+        <div className="grid gap-5 md:grid-cols-2">
           <FormField
             control={form.control}
             name="experienceType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Experience Type</FormLabel>
+                <FormLabel>
+                  Experience Type
+                </FormLabel>
 
                 <Select
-                  value={field.value}
-                  onValueChange={(value) =>
-                    field.onChange(value as ExperienceType)
+                  value={field.value ?? ""}
+                  onValueChange={(v) =>
+                    field.onChange(
+                      v as ExperienceType
+                    )
                   }
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger
+                      className={
+                        fieldClass
+                      }
+                    >
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                   </FormControl>
 
-                  <SelectContent>
-                    <SelectItem value={ExperienceType.FRESHER}>
+                  <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
+                    <SelectItem
+                      value={
+                        ExperienceType.FRESHER
+                      }
+                    >
                       Fresher
                     </SelectItem>
-
-                    <SelectItem value={ExperienceType.EXPERIENCED}>
+                    <SelectItem
+                      value={
+                        ExperienceType.EXPERIENCED
+                      }
+                    >
                       Experienced
                     </SelectItem>
                   </SelectContent>
                 </Select>
-
-                <FormMessage />
               </FormItem>
             )}
           />
@@ -514,104 +553,47 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel>
+                  Status
+                </FormLabel>
 
                 <Select
-                  value={field.value}
-                  onValueChange={(value) => field.onChange(value as Status)}
+                  value={field.value ?? ""}
+                  onValueChange={(v) =>
+                    field.onChange(
+                      v as Status
+                    )
+                  }
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger
+                      className={
+                        fieldClass
+                      }
+                    >
                       <SelectValue placeholder="Status" />
                     </SelectTrigger>
                   </FormControl>
 
-                  <SelectContent>
-                    <SelectItem value={Status.ACTIVE}>Active</SelectItem>
-
-                    <SelectItem value={Status.INACTIVE}>Inactive</SelectItem>
+                  <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
+                    <SelectItem
+                      value={Status.ACTIVE}
+                    >
+                      Active
+                    </SelectItem>
+                    <SelectItem
+                      value={
+                        Status.INACTIVE
+                      }
+                    >
+                      Inactive
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-
-                <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        {/* Experience Cards */}
-        {experienceType === ExperienceType.EXPERIENCED && (
-          <div className="rounded-xl border p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Previous Experience</h3>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => appendExperience(createExperienceEntry())}
-              >
-                +
-              </Button>
-            </div>
-
-            {experienceFields.map((item, index) => (
-              <div key={item.id} className="rounded-xl border p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Experience {index + 1}</h4>
-
-                  {experienceFields.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => removeExperience(index)}
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <FormField
-                    control={form.control}
-                    name={`experienceEntries.${index}.totalExperience`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Total Experience</FormLabel>
-                        <FormControl>
-                          <Input placeholder="2 Years" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`experienceEntries.${index}.previousCompanyName`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Previous Company</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Infosys" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {experienceFileFields.map((file) => (
-                    <React.Fragment key={`${file.name}-${item.id}`}>
-                      {renderImageUploadField(
-                        `experienceEntries.${index}.${file.name}`,
-                        file.label,
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Remark */}
         <FormField
@@ -619,32 +601,43 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
           name="remark"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Remark</FormLabel>
+              <FormLabel>
+                Remark
+              </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Additional Notes"
-                  className="min-h-24"
+                  className={
+                    textAreaClass
+                  }
+                  placeholder="Additional notes"
                   {...field}
+                  value={
+                    field.value ?? ""
+                  }
                 />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
 
         {/* Submit */}
-        <Button type="submit" disabled={isPending}>
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-xl"
+        >
           {isPending ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <ArrowRight className="mr-2 h-4 w-4" />
           )}
 
-          {update ? "Update Employee Document" : "Save Employee Document"}
+          {update
+            ? "Update Employee Document"
+            : "Save Employee Document"}
         </Button>
       </form>
     </Form>
   );
-};
-
+}
 export default EmployeeDocumentForm;
