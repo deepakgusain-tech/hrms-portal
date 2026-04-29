@@ -1,12 +1,23 @@
 "use client";
 
-import { moduleSchema } from "@/lib/validators";
-import { Module, Role } from "@/types";
-import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
-import { ControllerRenderProps, SubmitHandler, useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+import {
+  useForm,
+  SubmitHandler,
+} from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import z from "zod";
+import { z } from "zod";
+import { Status } from "@prisma/client";
+
+import { moduleSchema } from "@/lib/validators";
+import { Module } from "@/types";
+import {
+  createModule,
+  updateModule,
+} from "@/lib/actions/module-action";
+
 import {
   Form,
   FormControl,
@@ -15,7 +26,10 @@ import {
   FormLabel,
   FormMessage,
 } from "../ui/form";
+
 import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -23,19 +37,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+
 import { Button } from "../ui/button";
-import { ArrowRight, Loader } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Textarea } from "../ui/textarea";
-import { createModule, updateModule } from "@/lib/actions/module-action";
-import { Status } from "@prisma/client";
+
+import {
+  ArrowRight,
+  Loader2,
+  LayoutGrid,
+  FileText,
+  Sparkles,
+} from "lucide-react";
 
 type Props = {
   data?: Module;
   update: boolean;
 };
 
-const ModuleForm = ({ data, update = false }: Props) => {
+const inputStyle =
+  "h-12 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
+
+const textareaStyle =
+  "min-h-36 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
+
+const ModuleForm = ({
+  data,
+  update = false,
+}: Props) => {
   const router = useRouter();
   const id = data?.id;
 
@@ -43,10 +70,10 @@ const ModuleForm = ({ data, update = false }: Props) => {
     resolver: zodResolver(moduleSchema),
     defaultValues: data
       ? {
-          name: data.name,
-          description: data.description,
-          route: data.route || "",
-          status: data.status,
+          name: data.name ?? "",
+          description: data.description ?? "",
+          route: data.route ?? "",
+          status: data.status ?? Status.ACTIVE,
         }
       : {
           name: "",
@@ -56,11 +83,12 @@ const ModuleForm = ({ data, update = false }: Props) => {
         },
   });
 
-  const [isPending, startTransition] = React.useTransition();
+  const [isPending, startTransition] =
+    React.useTransition();
 
-  const onSubmit: SubmitHandler<z.infer<typeof moduleSchema>> = async (
-    values: any,
-  ) => {
+  const onSubmit: SubmitHandler<
+    z.infer<typeof moduleSchema>
+  > = (values) => {
     startTransition(async () => {
       let res;
 
@@ -72,117 +100,164 @@ const ModuleForm = ({ data, update = false }: Props) => {
 
       if (!res?.success) {
         toast.error("Error", {
-          description: res?.message,
+          description:
+            res?.message ||
+            "Something went wrong",
         });
-      } else {
-        router.push("/module");
+        return;
       }
+
+      toast.success(
+        update
+          ? "Module updated successfully"
+          : "Module created successfully"
+      );
+
+      router.push("/module");
+      router.refresh();
     });
   };
 
   return (
     <Form {...form}>
       <form
-        className="space-y-4"
-        onSubmit={form.handleSubmit(onSubmit, (errors) => console.log(errors))}
+        className="space-y-6"
+        onSubmit={form.handleSubmit(onSubmit)}
       >
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex flex-col gap-5">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({
-                field,
-              }: {
-                field: ControllerRenderProps<
-                  z.infer<typeof moduleSchema>,
-                  "name"
-                >;
-              }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/*  Status   */}
-          <div className="flex flex-col gap-5">
-            <FormField
-              control={form.control}
-              name="status"
-              render={({
-                field,
-              }: {
-                field: ControllerRenderProps<
-                  z.infer<typeof moduleSchema>,
-                  "status"
-                >;
-              }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <FormControl>
-                    <Select
-                      value={field.value}
-                      onValueChange={(v) => field.onChange(v as Status)}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={Status.ACTIVE}>Active</SelectItem>
-                        <SelectItem value={Status.INACTIVE}>
-                          Inactive
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-        {/*  Description   */}
-        <div className="flex flex-col gap-5">
+        {/* Top Fields */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Module Name */}
           <FormField
             control={form.control}
-            name="description"
-            render={({
-              field,
-            }: {
-              field: ControllerRenderProps<
-                z.infer<typeof moduleSchema>,
-                "description"
-              >;
-            }) => (
+            name="name"
+            render={({ field }) => (
               <FormItem>
-                <FormLabel>Description</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Module Name
+                </FormLabel>
+
                 <FormControl>
-                  <Textarea
-                    rows={20}
-                    className="h-40"
-                    placeholder="Enter description"
-                    {...field}
-                  />
+                  <div className="relative">
+                    <LayoutGrid className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                    <Input
+                      placeholder="Enter module name"
+                      className={`${inputStyle} pl-11`}
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  </div>
                 </FormControl>
+
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Status */}
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem className="w-full">
+                <FormLabel className="text-slate-700">
+                  Status
+                </FormLabel>
+
+                <FormControl>
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(value) =>
+                      field.onChange(
+                        value as Status
+                      )
+                    }
+                  >
+                    <SelectTrigger
+                      className={`${inputStyle} w-full`}
+                    >
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+
+                    <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
+                      <SelectItem value={Status.ACTIVE}>
+                        Active
+                      </SelectItem>
+                      <SelectItem value={Status.INACTIVE}>
+                        Inactive
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-        <div className="flex gap-2">
-          <Button type="submit" className="cursor-pointer" disabled={isPending}>
+
+        {/* Description */}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-slate-700">
+                Description
+              </FormLabel>
+
+              <FormControl>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                  <Textarea
+                    className={`${textareaStyle} pl-11`}
+                    placeholder="Enter description"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </div>
+              </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Info Card */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white">
+              <Sparkles className="h-4 w-4" />
+            </div>
+
+            <h3 className="text-lg font-semibold text-slate-800">
+              Module Setup
+            </h3>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            Create modules to organize
+            permissions and access
+            control across your HRMS
+            portal.
+          </p>
+        </div>
+
+        {/* Submit */}
+        <div className="flex gap-3">
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-xl"
+          >
             {isPending ? (
-              <Loader className="w-4 h-4 animate-spin cursor-pointer" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <ArrowRight className="w-4 h-4" />
-            )}{" "}
-            Save
+              <ArrowRight className="mr-2 h-4 w-4" />
+            )}
+
+            {update
+              ? "Update Module"
+              : "Save Module"}
           </Button>
         </div>
       </form>

@@ -1,57 +1,104 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useForm, SubmitHandler, ControllerRenderProps } from "react-hook-form";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import {
+  Loader2,
+  ArrowRight,
+  User,
+  Mail,
+  Lock,
+  BadgeCheck,
+  ShieldCheck,
+  FileText,
+  Sparkles,
+} from "lucide-react";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
-import { Loader2, ArrowRight } from "lucide-react";
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from "@/components/ui/form";
 
 import { z } from "zod";
-import { createUserSchema, userSchema } from "@/lib/validators";
+import {
+  createUserSchema,
+  userSchema,
+} from "@/lib/validators";
 
-import { createUser, updateUser } from "@/lib/actions/users";
+import {
+  createUser,
+  updateUser,
+} from "@/lib/actions/users";
 import { getRoles } from "@/lib/actions/role";
-import { Role, User } from "@/types";
+import { Role, User as UserType } from "@/types";
 import { userDefaultValues } from "@/lib/constants";
 import { Status } from "@prisma/client";
 
-const UserForm = ({ data, update = false }: { data?: User, update: boolean }) => {
-  const router = useRouter();
+const inputStyle =
+  "h-12 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
 
+const textareaStyle =
+  "min-h-36 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
+
+const UserForm = ({
+  data,
+  update = false,
+}: {
+  data?: UserType;
+  update: boolean;
+}) => {
+  const router = useRouter();
   const id = data?.id;
 
-  const currentSchema = update ? userSchema : createUserSchema;
+  const currentSchema =
+    update ? userSchema : createUserSchema;
 
   const currentData = update
-    ? (({ password, ...rest }) => rest)(userDefaultValues)
-    : userDefaultValues
+    ? (({ password, ...rest }) => rest)(
+        userDefaultValues
+      )
+    : userDefaultValues;
 
-  const form = useForm<z.infer<typeof currentSchema>>({
+  const form = useForm<
+    z.infer<typeof currentSchema>
+  >({
     resolver: zodResolver(currentSchema),
-    defaultValues: data || (currentData)
+    defaultValues: data || currentData,
   });
 
-  const [isPending, startTransition] = React.useTransition();
-  const [allRole, setAllRole] = React.useState<any>([]);
+  const [isPending, startTransition] =
+    React.useTransition();
 
-  const onSubmit: SubmitHandler<z.infer<typeof currentSchema>> = async (values) => {
+  const [allRole, setAllRole] =
+    React.useState<Role[]>([]);
+
+  useEffect(() => {
+    getRoles().then((res) => {
+      setAllRole(res || []);
+    });
+  }, []);
+
+  const onSubmit: SubmitHandler<
+    z.infer<typeof currentSchema>
+  > = async (values) => {
     startTransition(async () => {
       let res;
 
-      const payload = {
-        ...values,
-      };
-
       if (update && id) {
-        res = await updateUser(payload, id);
+        res = await updateUser(values, id);
       } else {
-        res = await createUser(payload);
+        res = await createUser(values);
       }
 
       if (!res?.success) {
@@ -64,55 +111,82 @@ const UserForm = ({ data, update = false }: { data?: User, update: boolean }) =>
     });
   };
 
-  useEffect(() => {
-    getRoles().then((res) => {
-      setAllRole(res);
-    })
-  }, [])
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit, (errors) => console.log(errors))} className="space-y-6">
-        <div className="grid grid-cols-2 gap-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6"
+      >
+        {/* Fields */}
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Username */}
           <FormField
             control={form.control}
             name="username"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Username</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Username
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter username" {...field} />
+                  <div className="relative">
+                    <User className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                    <Input
+                      placeholder="Enter username"
+                      className={`${inputStyle} pl-11`}
+                      {...field}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          {/* Email */}
           <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Email
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter email" {...field} />
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                    <Input
+                      placeholder="Enter email"
+                      className={`${inputStyle} pl-11`}
+                      {...field}
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Password (only if not updating) */}
+          {/* Password */}
           {!update && (
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel className="text-slate-700">
+                    Password
+                  </FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter password" {...field} />
+                    <div className="relative">
+                      <Lock className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                      <Input
+                        type="password"
+                        placeholder="Enter password"
+                        className={`${inputStyle} pl-11`}
+                        {...field}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -126,9 +200,15 @@ const UserForm = ({ data, update = false }: { data?: User, update: boolean }) =>
             name="firstName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>First Name</FormLabel>
+                <FormLabel className="text-slate-700">
+                  First Name
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter first name" {...field} />
+                  <Input
+                    placeholder="Enter first name"
+                    className={inputStyle}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -141,29 +221,47 @@ const UserForm = ({ data, update = false }: { data?: User, update: boolean }) =>
             name="lastName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Last Name</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Last Name
+                </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter last name" {...field} />
+                  <Input
+                    placeholder="Enter last name"
+                    className={inputStyle}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
+          {/* Role */}
           <FormField
             control={form.control}
             name="roleId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Role
+                </FormLabel>
                 <FormControl>
-                  <select {...field} className="border rounded px-3 py-2 w-full">
-                    <option value="" hidden>Select Role</option>
-                    {
-                      allRole.length > 0 && allRole.map((role: any, index: number) => (
-                        <option value={role.id} key={index}>{role.name}</option>
-                      ))
-                    }
+                  <select
+                    {...field}
+                    className={`${inputStyle} w-full px-4`}
+                  >
+                    <option value="" hidden>
+                      Select Role
+                    </option>
+
+                    {allRole.map((role) => (
+                      <option
+                        key={role.id}
+                        value={role.id}
+                      >
+                        {role.name}
+                      </option>
+                    ))}
                   </select>
                 </FormControl>
                 <FormMessage />
@@ -177,11 +275,20 @@ const UserForm = ({ data, update = false }: { data?: User, update: boolean }) =>
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Status
+                </FormLabel>
                 <FormControl>
-                  <select {...field} className="border rounded px-3 py-2 w-full">
-                    <option value={Status.ACTIVE}>Active</option>
-                    <option value={Status.INACTIVE}>Inactive</option>
+                  <select
+                    {...field}
+                    className={`${inputStyle} w-full px-4`}
+                  >
+                    <option value={Status.ACTIVE}>
+                      Active
+                    </option>
+                    <option value={Status.INACTIVE}>
+                      Inactive
+                    </option>
                   </select>
                 </FormControl>
                 <FormMessage />
@@ -196,20 +303,59 @@ const UserForm = ({ data, update = false }: { data?: User, update: boolean }) =>
           name="remark"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Remark</FormLabel>
+              <FormLabel className="text-slate-700">
+                Remark
+              </FormLabel>
               <FormControl>
-                <Textarea placeholder="Additional notes" className="h-32" {...field} />
+                <div className="relative">
+                  <FileText className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                  <Textarea
+                    placeholder="Additional notes"
+                    className={`${textareaStyle} pl-11`}
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Submit Button */}
+        {/* Role Preview Card */}
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white">
+              <Sparkles className="h-4 w-4" />
+            </div>
+
+            <h3 className="text-lg font-semibold text-slate-800">
+              User Access Setup
+            </h3>
+          </div>
+
+          <p className="text-sm text-slate-500">
+            Assign the correct role and status
+            for secure access management.
+          </p>
+        </div>
+
+        {/* Submit */}
         <div className="flex gap-3">
-          <Button type="submit" disabled={isPending}>
-            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            {update ? "Update User" : "Save User"}
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-xl"
+          >
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ArrowRight className="mr-2 h-4 w-4" />
+            )}
+
+            {update
+              ? "Update User"
+              : "Save User"}
           </Button>
         </div>
       </form>
@@ -218,4 +364,3 @@ const UserForm = ({ data, update = false }: { data?: User, update: boolean }) =>
 };
 
 export default UserForm;
-

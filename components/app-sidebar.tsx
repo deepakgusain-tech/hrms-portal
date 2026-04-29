@@ -121,13 +121,23 @@ const menu: MenuGroup[] = [
     name: "Project Management",
     icon: <FolderArchive size={18} />,
     children: [
-      { name: "Project Creation", url: "/projects", icon: <Building2 size={18} /> },
-      { name: "Project Members", url: "/project-members", icon: <UserCog size={18} /> },
-      { name: "Task Creation", url: "/tasks", icon: <UserCog size={18} /> },
-
+      {
+        name: "Project Creation",
+        url: "/projects",
+        icon: <Building2 size={18} />,
+      },
+      {
+        name: "Project Members",
+        url: "/project-members",
+        icon: <UserCog size={18} />,
+      },
+      {
+        name: "Task Creation",
+        url: "/tasks",
+        icon: <UserCog size={18} />,
+      },
     ],
   },
-  
   {
     name: "Configuration",
     icon: <Settings size={18} />,
@@ -169,16 +179,13 @@ function filterMenuByAccess(
   return menuGroups
     .map((group) => {
       if (group.children?.length) {
-        const children = group.children.filter((item) => routeSet.has(item.url));
+        const children = group.children.filter((item) =>
+          routeSet.has(item.url)
+        );
 
-        if (!children.length) {
-          return null;
-        }
+        if (!children.length) return null;
 
-        return {
-          ...group,
-          children,
-        };
+        return { ...group, children };
       }
 
       if (group.url && routeSet.has(group.url)) {
@@ -208,7 +215,11 @@ export function AppSidebar({
     avatar: user?.avatar || "",
   };
 
-  const filteredMenu = filterMenuByAccess(getMenuByRole(role), role, accessibleRoutes);
+  const filteredMenu = filterMenuByAccess(
+    getMenuByRole(role),
+    role,
+    accessibleRoutes
+  );
 
   const homeHref =
     role?.toLowerCase() === "employee"
@@ -219,27 +230,33 @@ export function AppSidebar({
   const logoSrc = config?.logo?.trim() || "";
 
   return (
-    <Sidebar collapsible="icon" {...props}>
-      {/* Header */}
-      <SidebarHeader>
+    <Sidebar
+      collapsible="icon"
+      className="border-r border-indigo-200/40 bg-gradient-to-b from-indigo-400 via-blue-400 to-cyan-300 text-white shadow-xl"
+      {...props}
+    >
+      <SidebarHeader className="border-b border-white/20 px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="p-2 h-auto">
+            <SidebarMenuButton
+              asChild
+              className="h-auto rounded-2xl p-2 hover:bg-white/15 transition-all duration-200"
+            >
               <Link href={homeHref}>
-                <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center gap-3 min-w-0">
                   {logoSrc ? (
                     <Image
                       src={logoSrc}
                       alt="Company Logo"
-                      width={28}
-                      height={28}
-                      className="rounded-md object-cover shrink-0"
+                      width={30}
+                      height={30}
+                      className="rounded-xl object-cover shrink-0 border border-white/30"
                     />
                   ) : (
-                    <div className="w-7 h-7 rounded-md bg-gray-300 shrink-0" />
+                    <div className="w-8 h-8 rounded-xl bg-white/25 shrink-0" />
                   )}
 
-                  <span className="text-sm font-semibold truncate group-data-[collapsible=icon]:hidden">
+                  <span className="text-sm font-semibold tracking-wide truncate text-white group-data-[collapsible=icon]:hidden">
                     {companyName}
                   </span>
                 </div>
@@ -249,7 +266,6 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Menu */}
       <SidebarContent className="p-2 space-y-2">
         {filteredMenu.map((group) =>
           group.children ? (
@@ -257,7 +273,10 @@ export function AppSidebar({
           ) : (
             <SidebarMenu key={group.name}>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton
+                  asChild
+                  className="rounded-2xl text-white hover:bg-white/15 hover:text-white transition-all duration-200 data-[active=true]:bg-white data-[active=true]:text-indigo-700 data-[active=true]:shadow-lg"
+                >
                   <Link href={group.url!}>
                     {group.icon}
                     <span>{group.name}</span>
@@ -269,9 +288,10 @@ export function AppSidebar({
         )}
       </SidebarContent>
 
-      {/* Footer */}
-      <SidebarFooter>
-        <NavUser user={navUser} />
+      <SidebarFooter className="border-t border-white/20 p-2">
+        <div className="rounded-2xl bg-white/25 backdrop-blur-md ring-1 ring-white/20">
+          <NavUser user={navUser} />
+        </div>
       </SidebarFooter>
 
       <SidebarRail />

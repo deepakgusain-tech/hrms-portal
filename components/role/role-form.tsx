@@ -5,13 +5,28 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, ArrowRight } from "lucide-react";
+import {
+  Loader2,
+  ArrowRight,
+  ShieldCheck,
+  FileText,
+  Layers,
+  Sparkles,
+} from "lucide-react";
 
 import { roleSchema } from "@/lib/validators";
 import { roleDefaultValues } from "@/lib/constants";
 import { createRole, updateRole } from "@/lib/actions/role";
 
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -20,8 +35,21 @@ import { z } from "zod";
 import { Module } from "@/types";
 import { Status } from "@prisma/client";
 
-const RoleForm = ({ data, update = false, modules }: { data?: any; update: boolean; modules: Module[] }) => {
+const inputStyle =
+  "h-12 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
 
+const textareaStyle =
+  "min-h-36 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
+
+const RoleForm = ({
+  data,
+  update = false,
+  modules,
+}: {
+  data?: any;
+  update: boolean;
+  modules: Module[];
+}) => {
   const router = useRouter();
   const id = data?.id;
 
@@ -30,11 +58,17 @@ const RoleForm = ({ data, update = false, modules }: { data?: any; update: boole
     defaultValues: data || roleDefaultValues,
   });
 
-  const [isPending, startTransition] = React.useTransition();
+  const [isPending, startTransition] =
+    React.useTransition();
 
-  const [selectedModules, setSelectedModules] = React.useState<any[]>(update ? data.roleModules : []);
+  const [selectedModules, setSelectedModules] =
+    React.useState<any[]>(
+      update ? data.roleModules : []
+    );
 
-  const onSubmit: SubmitHandler<z.infer<typeof roleSchema>> = (values: any) => {
+  const onSubmit: SubmitHandler<
+    z.infer<typeof roleSchema>
+  > = (values: any) => {
     startTransition(async () => {
       let res;
 
@@ -61,118 +95,198 @@ const RoleForm = ({ data, update = false, modules }: { data?: any; update: boole
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-2 gap-6">
-          {/* Role Name */}
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-6"
+      >
+        <div className="grid gap-6 md:grid-cols-2">
           <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role Name</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Role Name
+                </FormLabel>
+
                 <FormControl>
-                  <Input placeholder="Enter role name" {...field} />
+                  <div className="relative">
+                    <ShieldCheck className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                    <Input
+                      placeholder="Enter role name"
+                      className={`${inputStyle} pl-11`}
+                      {...field}
+                    />
+                  </div>
                 </FormControl>
+
                 <FormMessage />
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="status"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Status</FormLabel>
+                <FormLabel className="text-slate-700">
+                  Status
+                </FormLabel>
+
                 <FormControl>
-                  <select {...field} className="border rounded px-3 py-2 w-full">
-                    <option value={Status.ACTIVE}>Active</option>
-                    <option value={Status.INACTIVE}>Inactive</option>
+                  <select
+                    {...field}
+                    className={`${inputStyle} w-full px-4`}
+                  >
+                    <option value={Status.ACTIVE}>
+                      Active
+                    </option>
+                    <option value={Status.INACTIVE}>
+                      Inactive
+                    </option>
                   </select>
                 </FormControl>
+
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
-        {/* Remark */}
         <FormField
           control={form.control}
           name="remark"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Remark</FormLabel>
+              <FormLabel className="text-slate-700">
+                Remark
+              </FormLabel>
+
               <FormControl>
-                <Textarea
-                  className="h-40"
-                  placeholder="Enter Notes"
-                  {...field}
-                  value={field.value ?? ""}
-                />
+                <div className="relative">
+                  <FileText className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                  <Textarea
+                    className={`${textareaStyle} pl-11`}
+                    placeholder="Enter Notes"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </div>
               </FormControl>
+
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex flex-col gap-3">
-          <FormLabel>Assign Modules & Permissions</FormLabel>
+        <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center gap-2">
+            <Layers className="h-5 w-5 text-cyan-500" />
+            <h3 className="text-lg font-semibold text-slate-800">
+              Assign Modules & Permissions
+            </h3>
+          </div>
 
-          {/* ✅ 3 MODULES PER ROW */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {modules.map((m) => {
-              const selected = selectedModules.find(
-                (sm) => sm.moduleId === m.id,
-              );
+              const selected =
+                selectedModules.find(
+                  (sm) => sm.moduleId === m.id
+                );
 
               return (
-                <div key={m.id} className="border rounded-md p-3">
-                  {/* MODULE NAME */}
-                  <div className="font-medium mb-3 text-left">{m.name}</div>
+                <div
+                  key={m.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="mb-4 flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
 
-                  {/* ✅ HORIZONTAL PERMISSIONS */}
-                  <div className="flex flex-wrap gap-3 justify-left text-spacebetween">
-                    {["view", "create", "edit", "delete"].map((perm) => {
+                    <h4 className="font-semibold text-slate-800">
+                      {m.name}
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      "view",
+                      "create",
+                      "edit",
+                      "delete",
+                    ].map((perm) => {
                       const key =
-                        "can" + perm.charAt(0).toUpperCase() + perm.slice(1);
+                        "can" +
+                        perm.charAt(0).toUpperCase() +
+                        perm.slice(1);
+
+                      const active =
+                        selected?.[key] || false;
 
                       return (
-                        <label key={perm} className="flex items-center gap-1">
-                          <input
-                            type="checkbox"
-                            checked={selected?.[key] || false}
-                            onChange={() => {
-                              setSelectedModules((prev) => {
-                                const exists = prev.find(
-                                  (p) => p.moduleId === m.id,
-                                );
+                        <button
+                          key={perm}
+                          type="button"
+                          onClick={() => {
+                            setSelectedModules(
+                              (prev) => {
+                                const exists =
+                                  prev.find(
+                                    (p) =>
+                                      p.moduleId ===
+                                      m.id
+                                  );
 
-                                if (!exists) {
+                                if (
+                                  !exists
+                                ) {
                                   return [
                                     ...prev,
                                     {
-                                      moduleId: m.id,
-                                      canView: perm === "view",
-                                      canCreate: perm === "create",
-                                      canEdit: perm === "edit",
-                                      canDelete: perm === "delete",
+                                      moduleId:
+                                        m.id,
+                                      canView:
+                                        perm ===
+                                        "view",
+                                      canCreate:
+                                        perm ===
+                                        "create",
+                                      canEdit:
+                                        perm ===
+                                        "edit",
+                                      canDelete:
+                                        perm ===
+                                        "delete",
                                     },
                                   ];
                                 }
 
-                                return prev.map((p) =>
-                                  p.moduleId === m.id
-                                    ? {
-                                      ...p,
-                                      [key]: !p[key],
-                                    }
-                                    : p,
+                                return prev.map(
+                                  (p) =>
+                                    p.moduleId ===
+                                    m.id
+                                      ? {
+                                          ...p,
+                                          [key]:
+                                            !p[
+                                              key
+                                            ],
+                                        }
+                                      : p
                                 );
-                              });
-                            }}
-                          />
+                              }
+                            );
+                          }}
+                          className={`rounded-xl border px-3 py-2 text-sm font-medium capitalize transition-all ${
+                            active
+                              ? "border-transparent bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-sm"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-cyan-300"
+                          }`}
+                        >
                           {perm}
-                        </label>
+                        </button>
                       );
                     })}
                   </div>
@@ -182,15 +296,21 @@ const RoleForm = ({ data, update = false, modules }: { data?: any; update: boole
           </div>
         </div>
 
-        {/* Submit */}
         <div className="flex gap-3">
-          <Button type="submit" disabled={isPending}>
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-xl"
+          >
             {isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="mr-2 h-4 w-4" />
             )}
-            Save Role
+
+            {update
+              ? "Update Role"
+              : "Save Role"}
           </Button>
         </div>
       </form>

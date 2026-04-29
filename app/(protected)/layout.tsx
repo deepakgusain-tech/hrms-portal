@@ -45,12 +45,6 @@ export default async function ProtectedLayout({
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-white px-4">
           <SidebarTrigger />
-
-          <div className="ml-3">
-            <p className="text-sm font-medium text-slate-900">
-              {session.user.role || "Workspace"}
-            </p>
-          </div>
         </header>
 
         <div className="flex flex-1 flex-col">

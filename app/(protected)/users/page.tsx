@@ -23,7 +23,7 @@ export default async function UsersPage() {
       actions={
         permissions.canCreate && (
           <Button className="bg-blue-500 hover:bg-blue-600">
-            <Link href="/users/create">Add Create</Link>
+            <Link href="/users/create">Add User</Link>
           </Button>
         )
       } />

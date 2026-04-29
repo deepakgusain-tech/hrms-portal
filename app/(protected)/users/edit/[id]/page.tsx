@@ -1,43 +1,89 @@
-"use server"
+"use server";
 
-import { notFound, redirect } from "next/navigation"
-import UserForm from "@/components/user/user-form"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { getUserById } from "@/lib/actions/users"
-import { canAccess } from "@/lib/rbac"
-import { User } from "@/types"
+import { notFound, redirect } from "next/navigation";
+import UserForm from "@/components/user/user-form";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { getUserById } from "@/lib/actions/users";
+import { canAccess } from "@/lib/rbac";
+import { User } from "@/types";
+import {
+  ArrowLeft,
+  UserCog,
+  Sparkles,
+} from "lucide-react";
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  const route = "/users"
-  const canEdit = await canAccess(route, "edit")
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const route = "/users";
+  const canEdit = await canAccess(route, "edit");
 
   if (!canEdit) {
-    redirect("/404")
+    redirect("/404");
   }
 
-  const { id } = await params
+  const { id } = await params;
 
-  const user = await getUserById(id);  
+  const user = await getUserById(id);
 
-  if (!user.success) notFound()
+  if (!user.success) notFound();
 
   return (
-    <div className="p-6 space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>Edit User</CardTitle>
-            <Button className="bg-blue-500 hover:bg-blue-600">
-              <Link href="/users">Back</Link>
+    <div className="relative p-6">
+      {/* Background Glow */}
+      <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-indigo-50 via-white to-cyan-50" />
+
+      <Card className="overflow-hidden rounded-3xl border border-white/60 bg-white/80 shadow-2xl backdrop-blur-xl">
+        <CardHeader className="border-b border-slate-100 bg-gradient-to-r from-white to-slate-50 pb-6">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            {/* Left */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white shadow-lg">
+                <UserCog size={24} />
+                <span className="absolute -right-1 -top-1 rounded-full bg-white p-1 text-cyan-500 shadow">
+                  <Sparkles size={12} />
+                </span>
+              </div>
+
+              <div>
+                <CardTitle className="text-2xl font-bold tracking-tight text-slate-800">
+                  Edit User
+                </CardTitle>
+                <p className="mt-1 text-sm text-slate-500">
+                  Update user details and account permissions
+                </p>
+              </div>
+            </div>
+
+            {/* Right */}
+            <Button
+              asChild
+              className="h-11 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-5 text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+            >
+              <Link href="/users">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+              </Link>
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <UserForm data={user.data as User} update={true} />
+
+        <CardContent className="bg-white/70 p-6 md:p-8">
+          <UserForm
+            data={user.data as User}
+            update={true}
+          />
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

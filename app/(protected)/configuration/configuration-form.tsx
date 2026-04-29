@@ -12,7 +12,6 @@ import { configurationSchema } from "@/lib/validators";
 import { createOrUpdateConfiguration } from "@/lib/actions/configuration";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -21,13 +20,30 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
 import { Input } from "@/components/ui/input";
+
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+
+import {
+  Building2,
+  ImageIcon,
+  Mail,
+  Lock,
+  Loader2,
+  Save,
+} from "lucide-react";
+
+const inputStyle =
+  "h-12 rounded-2xl border border-slate-200 bg-white shadow-sm outline-none transition-all duration-200 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
+
+const fileStyle =
+  "h-12 cursor-pointer rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:border-cyan-300 focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-100";
 
 const ConfigurationForm = ({
   data,
@@ -38,10 +54,13 @@ const ConfigurationForm = ({
 }) => {
   const router = useRouter();
 
-  const [isPending, startTransition] = React.useTransition();
+  const [isPending, startTransition] =
+    React.useTransition();
 
   const form = useForm<Configuration>({
-    resolver: zodResolver(configurationSchema),
+    resolver: zodResolver(
+      configurationSchema
+    ),
     defaultValues: {
       name: data?.name || "",
       logo: data?.logo || "",
@@ -61,31 +80,65 @@ const ConfigurationForm = ({
     });
   }, [data, form]);
 
-
   function onSubmit(values: Configuration) {
     startTransition(async () => {
       try {
         const formData = new FormData();
 
-        formData.set("id", data?.id || "");
-        formData.set("currentLogo", typeof data?.logo === "string" ? data.logo : "");
+        formData.set(
+          "id",
+          data?.id || ""
+        );
+
+        formData.set(
+          "currentLogo",
+          typeof data?.logo === "string"
+            ? data.logo
+            : ""
+        );
+
         formData.set(
           "currentFavicon",
-          typeof data?.favicon === "string" ? data.favicon : ""
+          typeof data?.favicon === "string"
+            ? data.favicon
+            : ""
         );
-        formData.set("name", values.name || "");
-        formData.set("email", values.email || "");
-        formData.set("password", values.password || "");
+
+        formData.set(
+          "name",
+          values.name || ""
+        );
+
+        formData.set(
+          "email",
+          values.email || ""
+        );
+
+        formData.set(
+          "password",
+          values.password || ""
+        );
 
         if (values.logo instanceof File) {
-          formData.set("logo", values.logo);
+          formData.set(
+            "logo",
+            values.logo
+          );
         }
 
-        if (values.favicon instanceof File) {
-          formData.set("favicon", values.favicon);
+        if (
+          values.favicon instanceof File
+        ) {
+          formData.set(
+            "favicon",
+            values.favicon
+          );
         }
 
-        const res = await createOrUpdateConfiguration(formData);
+        const res =
+          await createOrUpdateConfiguration(
+            formData
+          );
 
         if (!res.success) {
           toast.error(res.message);
@@ -96,212 +149,312 @@ const ConfigurationForm = ({
         router.refresh();
       } catch (error) {
         console.error(error);
-        toast.error("Something went wrong");
+        toast.error(
+          "Something went wrong"
+        );
       }
     });
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="space-y-1">
-          <h1 className="text-lg font-semibold">Configuration</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage branding and email credentials for the portal.
-          </p>
-        </div>
-      </CardHeader>
+    <div className="rounded-3xl border border-white/60 bg-white/80 p-6 shadow-xl backdrop-blur-md">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-800">
+          Configuration
+        </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Manage branding and email
+          credentials for your portal.
+        </p>
+      </div>
 
-      <CardContent>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-6"
-            encType="multipart/form-data"
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(
+            onSubmit
+          )}
+          className="space-y-6"
+          encType="multipart/form-data"
+        >
+          <Accordion
+            type="multiple"
+            defaultValue={[
+              "general",
+              "email",
+            ]}
+            className="space-y-4"
           >
-            <Accordion
-              type="multiple"
-              defaultValue={["general", "email"]}
+            {/* General */}
+            <AccordionItem
+              value="general"
+              className="rounded-2xl border border-slate-200 bg-white px-4"
             >
-              {/* General */}
-              <AccordionItem value="general">
-                <AccordionTrigger>General</AccordionTrigger>
+              <AccordionTrigger className="text-base font-semibold text-slate-700">
+                General Settings
+              </AccordionTrigger>
 
-                <AccordionContent className="space-y-6">
-                  {/* Name */}
-                  <FormField
-                    control={form.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company Name</FormLabel>
-                        <FormControl>
+              <AccordionContent className="space-y-6 pt-4">
+                {/* Name */}
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({
+                    field,
+                  }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Company Name
+                      </FormLabel>
+
+                      <FormControl>
+                        <div className="relative">
+                          <Building2 className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
                           <Input
                             placeholder="Enter company name"
-                            disabled={!canEdit}
+                            disabled={
+                              !canEdit
+                            }
+                            className={`${inputStyle} pl-11`}
                             {...field}
                           />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        </div>
+                      </FormControl>
 
-                  {/* Logo */}
-                  <FormField
-                    control={form.control}
-                    name="logo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Logo</FormLabel>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            className="cursor-pointer"
-                            disabled={!canEdit}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              field.onChange(file || "");
-                            }}
+                {/* Logo */}
+                <FormField
+                  control={form.control}
+                  name="logo"
+                  render={({
+                    field,
+                  }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Logo
+                      </FormLabel>
+
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          disabled={
+                            !canEdit
+                          }
+                          className={
+                            fileStyle
+                          }
+                          onChange={(
+                            e
+                          ) => {
+                            const file =
+                              e
+                                .target
+                                .files?.[0];
+                            field.onChange(
+                              file ||
+                                ""
+                            );
+                          }}
+                        />
+                      </FormControl>
+
+                      {typeof data?.logo ===
+                        "string" &&
+                      data.logo ? (
+                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <Image
+                            src={
+                              data.logo
+                            }
+                            alt="Logo"
+                            width={48}
+                            height={48}
+                            className="h-12 w-12 rounded-xl border object-cover"
+                            unoptimized
                           />
-                        </FormControl>
 
-                        {typeof data?.logo === "string" && data.logo ? (
-                          <div className="flex items-center gap-3 rounded-md border p-3">
-                            <Image
-                              src={data.logo}
-                              alt="Current logo"
-                              width={48}
-                              height={48}
-                              className="h-12 w-12 rounded-md border object-cover"
-                              unoptimized
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium">Current logo</p>
-                              <p className="truncate text-xs text-muted-foreground">
-                                Saved image will remain until you upload a new one.
-                              </p>
-                            </div>
-                          </div>
-                        ) : null}
+                          <p className="text-sm text-slate-600">
+                            Current
+                            logo
+                          </p>
+                        </div>
+                      ) : null}
 
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Favicon */}
-                  <FormField
-                    control={form.control}
-                    name="favicon"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Favicon</FormLabel>
+                {/* Favicon */}
+                <FormField
+                  control={form.control}
+                  name="favicon"
+                  render={({
+                    field,
+                  }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Favicon
+                      </FormLabel>
 
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            className="cursor-pointer"
-                            disabled={!canEdit}
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              field.onChange(file || "");
-                            }}
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          disabled={
+                            !canEdit
+                          }
+                          className={
+                            fileStyle
+                          }
+                          onChange={(
+                            e
+                          ) => {
+                            const file =
+                              e
+                                .target
+                                .files?.[0];
+                            field.onChange(
+                              file ||
+                                ""
+                            );
+                          }}
+                        />
+                      </FormControl>
+
+                      {typeof data?.favicon ===
+                        "string" &&
+                      data.favicon ? (
+                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                          <Image
+                            src={
+                              data.favicon
+                            }
+                            alt="Favicon"
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 rounded border object-cover"
+                            unoptimized
                           />
-                        </FormControl>
 
-                        {typeof data?.favicon === "string" && data.favicon ? (
-                          <div className="flex items-center gap-3 rounded-md border p-3">
-                            <Image
-                              src={data.favicon}
-                              alt="Current favicon"
-                              width={32}
-                              height={32}
-                              className="h-8 w-8 rounded border object-cover"
-                              unoptimized
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium">Current favicon</p>
-                              <p className="truncate text-xs text-muted-foreground">
-                                Upload a new file only if you want to replace it.
-                              </p>
-                            </div>
-                          </div>
-                        ) : null}
+                          <p className="text-sm text-slate-600">
+                            Current
+                            favicon
+                          </p>
+                        </div>
+                      ) : null}
 
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </AccordionContent>
-              </AccordionItem>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
 
-              {/* Email */}
-              <AccordionItem value="email">
-                <AccordionTrigger>Email</AccordionTrigger>
+            {/* Email */}
+            <AccordionItem
+              value="email"
+              className="rounded-2xl border border-slate-200 bg-white px-4"
+            >
+              <AccordionTrigger className="text-base font-semibold text-slate-700">
+                Email Settings
+              </AccordionTrigger>
 
-                <AccordionContent className="space-y-6">
-                  {/* Email */}
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
+              <AccordionContent className="space-y-6 pt-4">
+                {/* Email */}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({
+                    field,
+                  }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Email
+                      </FormLabel>
 
-                        <FormControl>
+                      <FormControl>
+                        <div className="relative">
+                          <Mail className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
                           <Input
                             type="email"
                             placeholder="Enter email"
-                            disabled={!canEdit}
+                            disabled={
+                              !canEdit
+                            }
+                            className={`${inputStyle} pl-11`}
                             {...field}
                           />
-                        </FormControl>
+                        </div>
+                      </FormControl>
 
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  {/* Password */}
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password</FormLabel>
+                {/* Password */}
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({
+                    field,
+                  }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Password
+                      </FormLabel>
 
-                        <FormControl>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
                           <Input
                             type="password"
                             placeholder="Enter password"
-                            disabled={!canEdit}
+                            disabled={
+                              !canEdit
+                            }
+                            className={`${inputStyle} pl-11`}
                             {...field}
                           />
-                        </FormControl>
+                        </div>
+                      </FormControl>
 
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
-            <Button
-              type="submit"
-              disabled={isPending || !canEdit}
-              className="w-full"
-            >
-              {!canEdit ? "Read Only" : isPending ? "Saving..." : "Submit"}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <Button
+            type="submit"
+            disabled={
+              isPending ||
+              !canEdit
+            }
+            className="h-12 w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white shadow-md transition-all hover:scale-[1.01] hover:shadow-xl"
+          >
+            {isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+
+            {!canEdit
+              ? "Read Only"
+              : isPending
+              ? "Saving..."
+              : "Save Configuration"}
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 };
 
