@@ -16,6 +16,7 @@ import {
   transferPromotionSchema,
   userSchema,
   workLocationSchema,
+  attendanceSchema,
 } from "@/lib/validators";
 
 export type Role = z.infer<typeof roleSchema>;
@@ -59,3 +60,8 @@ export type Project = z.infer<typeof projectSchema>
 export type ProjectMember = z.infer<typeof projectMemberSchema>
 export type Task = z.infer<typeof taskSchema>
 export type TaskComment = z.infer<typeof taskCommentSchema>
+export type Attendance = z.infer<typeof attendanceSchema> & {
+  employeeName?: string;
+  employeeCode?: string;
+  departmentName?: string;
+};

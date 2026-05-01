@@ -4,7 +4,8 @@ import {
   Status,
   ProjectStatus,
   TaskStatus,
-  Priority
+  Priority,
+  AttendanceStatus
 } from "@prisma/client";
 import { z } from "zod";
 
@@ -338,6 +339,22 @@ export const taskCommentSchema = z.object({
   projectId: z.string().min(1, "Project is required"),
   employeeId: z.string().min(1, "Employee is required"),
   comment: z.string().min(1, "Comment is required"),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
+/* ---------------- ATTENDANCE ---------------- */
+export const attendanceSchema = z.object({
+  id: z.string().optional(),
+  employeeId: z.string().min(1, "Employee is required"),
+  date: z.string().min(1, "Date is required"),
+  checkIn: z.string().optional(),
+  checkOut: z.string().optional(),
+  workingHours: z.coerce.number().nullable().optional(),
+  status: z.nativeEnum(AttendanceStatus),
+  isLate: z.boolean().optional(),
+  isHalfDay: z.boolean().optional(),
+  remarks: z.string().optional(),
   createdAt: z.string().nullable().optional(),
   updatedAt: z.string().nullable().optional(),
 });

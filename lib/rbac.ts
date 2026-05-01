@@ -47,6 +47,10 @@ function isAdminUser(user: UserWithPermissions | null) {
   return !!user?.role?.name?.toLowerCase().includes("admin");
 }
 
+function isEmployeeUser(user: UserWithPermissions | null) {
+  return user?.role?.name?.toLowerCase() === "employee";
+}
+
 function getModulePermission(
   user: UserWithPermissions | null,
   route: string
@@ -83,6 +87,13 @@ export async function canAccess(route: string, action: PermissionAction) {
     return true;
   }
 
+  if (
+    isEmployeeUser(user) &&
+    (route === "/employee-documents" || route === "/attendance")
+  ) {
+    return action !== "delete";
+  }
+
   const permission = getModulePermission(user, route);
   return readPermission(permission, action);
 }
@@ -105,6 +116,18 @@ export async function getRoutePermissions(route: string) {
       canCreate: true,
       canEdit: true,
       canDelete: true,
+    };
+  }
+
+  if (
+    isEmployeeUser(user) &&
+    (route === "/employee-documents" || route === "/attendance")
+  ) {
+    return {
+      canView: true,
+      canCreate: true,
+      canEdit: true,
+      canDelete: false,
     };
   }
 

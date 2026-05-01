@@ -7,6 +7,7 @@ import {
   ArrowRightLeft,
   Briefcase,
   Building2,
+  CalendarCheck,
   FolderArchive,
   Gauge,
   IdCard,
@@ -98,6 +99,11 @@ const menu: MenuGroup[] = [
         url: "/transfer-promotion",
         icon: <ArrowRightLeft size={18} />,
       },
+      {
+        name: "Attendance",
+        url: "/attendance",
+        icon: <CalendarCheck size={18} />,
+      },
     ],
   },
   {
@@ -156,6 +162,11 @@ function getMenuByRole(role?: SidebarRole): MenuGroup[] {
             name: "Employee Dashboard",
             url: "/employee-dashboard",
             icon: <Users2Icon size={18} />,
+          },
+          {
+            name: "Attendance",
+            url: "/attendance",
+            icon: <CalendarCheck size={18} />,
           },
         ],
       },

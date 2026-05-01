@@ -6,7 +6,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getEmployeeDocumentById } from "@/lib/actions/employee-documents";
+import {
+  getCurrentEmployeeDocumentOwner,
+  getEmployeeDocumentById,
+} from "@/lib/actions/employee-documents";
 import { canAccess } from "@/lib/rbac";
 import { EmployeeDocument } from "@/types";
 import Link from "next/link";
@@ -31,6 +34,8 @@ const EmployeeDocumentEditPage = async ({
   if (!record.success || !record.data) {
     notFound();
   }
+
+  const currentEmployee = await getCurrentEmployeeDocumentOwner();
 
   return (
     <Card className="rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
@@ -69,6 +74,7 @@ const EmployeeDocumentEditPage = async ({
         <EmployeeDocumentForm
           data={record.data as EmployeeDocument}
           update={true}
+          currentEmployee={currentEmployee}
         />
       </CardContent>
     </Card>

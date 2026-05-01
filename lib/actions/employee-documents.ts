@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/auth";
 import {
   Prisma,
   ExperienceType,
@@ -32,6 +33,54 @@ type ExperienceEntry = {
   salarySlip2FileUrl?: string;
   salarySlip3FileUrl?: string;
 };
+
+type EmployeeDocumentOwner = {
+  id: string;
+  employeeName: string;
+  employeeCode: string;
+};
+
+type EmployeeDocumentAccess = {
+  isEmployee: boolean;
+  owner: EmployeeDocumentOwner | null;
+};
+
+async function getCurrentEmployeeAccess(): Promise<EmployeeDocumentAccess> {
+  const session = await auth();
+  const isEmployee = session?.user?.role?.toLowerCase() === "employee";
+
+  if (!isEmployee || !session?.user?.id) {
+    return {
+      isEmployee,
+      owner: null,
+    };
+  }
+
+  const owner = await prisma.employeeProfile.findFirst({
+    where: {
+      employeeId: session.user.id,
+    },
+    select: {
+      id: true,
+      employeeName: true,
+      employeeCode: true,
+    },
+  });
+
+  return {
+    isEmployee,
+    owner,
+  };
+}
+
+async function getCurrentEmployeeOwner(): Promise<EmployeeDocumentOwner | null> {
+  const access = await getCurrentEmployeeAccess();
+  return access.owner;
+}
+
+export async function getCurrentEmployeeDocumentOwner() {
+  return getCurrentEmployeeOwner();
+}
 
 function normalizeEducationEntries(
   value: Prisma.JsonValue | null | undefined,
@@ -169,7 +218,18 @@ function mapEmployeeDocument(record: {
 
 export async function getEmployeeDocuments(): Promise<EmployeeDocument[]> {
   try {
+    const access = await getCurrentEmployeeAccess();
+
+    if (access.isEmployee && !access.owner) {
+      return [];
+    }
+
     const records = await prisma.employeeDocument.findMany({
+      where: access.owner
+        ? {
+            employeeId: access.owner.id,
+          }
+        : undefined,
       orderBy: {
         createdAt: "desc",
       },
@@ -192,7 +252,31 @@ export async function createEmployeeDocument(
   data: EmployeeDocument,
 ): Promise<ActionResponse> {
   try {
-    const record = employeeDocumentSchema.parse(data);
+    const access = await getCurrentEmployeeAccess();
+
+    if (access.isEmployee && !access.owner) {
+      return {
+        success: false,
+        message: "Your employee profile is not linked yet",
+      };
+    }
+
+    const record = employeeDocumentSchema.parse(
+      access.owner
+        ? {
+            ...data,
+            employeeId: access.owner.id,
+            employeeCode: access.owner.employeeCode,
+          }
+        : data,
+    );
+
+    if (access.owner && record.employeeId !== access.owner.id) {
+      return {
+        success: false,
+        message: "You can only add documents for your own profile",
+      };
+    }
 
     await prisma.employeeDocument.create({
       data: {
@@ -219,8 +303,8 @@ export async function createEmployeeDocument(
         status: record.status,
       },
     });
-    console.log(data);
     revalidatePath("/employee-documents");
+    revalidatePath("/employee-dashboard");
 
     return {
       success: true,
@@ -236,6 +320,7 @@ export async function createEmployeeDocument(
 
 export async function getEmployeeDocumentById(id: string) {
   try {
+    const access = await getCurrentEmployeeAccess();
     const record =
       await prisma.employeeDocument.findUnique({
         where: { id },
@@ -248,7 +333,11 @@ export async function getEmployeeDocumentById(id: string) {
         },
       });
 
-    if (!record) {
+    if (
+      !record ||
+      (access.isEmployee &&
+        (!access.owner || record.employeeId !== access.owner.id))
+    ) {
       return {
         success: false,
         message: "Employee document not found",
@@ -273,15 +362,36 @@ export async function updateEmployeeDocument(
   id: string,
 ): Promise<ActionResponse> {
   try {
-    const record = employeeDocumentSchema.parse(data);
+    const access = await getCurrentEmployeeAccess();
+
+    if (access.isEmployee && !access.owner) {
+      return {
+        success: false,
+        message: "Your employee profile is not linked yet",
+      };
+    }
+
+    const record = employeeDocumentSchema.parse(
+      access.owner
+        ? {
+            ...data,
+            employeeId: access.owner.id,
+            employeeCode: access.owner.employeeCode,
+          }
+        : data,
+    );
 
     const existing =
       await prisma.employeeDocument.findUnique({
         where: { id },
-        select: { id: true },
+        select: { id: true, employeeId: true },
       });
 
-    if (!existing) {
+    if (
+      !existing ||
+      (access.isEmployee &&
+        (!access.owner || existing.employeeId !== access.owner.id))
+    ) {
       return {
         success: false,
         message: "Employee document not found",
@@ -316,6 +426,7 @@ export async function updateEmployeeDocument(
     });
 
     revalidatePath("/employee-documents");
+    revalidatePath("/employee-dashboard");
     revalidatePath(`/employee-documents/edit/${id}`);
 
     return {
@@ -334,6 +445,15 @@ export async function deleteEmployeeDocument(
   id: string,
 ): Promise<ActionResponse> {
   try {
+    const access = await getCurrentEmployeeAccess();
+
+    if (access.isEmployee) {
+      return {
+        success: false,
+        message: "Employees cannot delete documents",
+      };
+    }
+
     await prisma.employeeDocument.delete({
       where: { id },
     });

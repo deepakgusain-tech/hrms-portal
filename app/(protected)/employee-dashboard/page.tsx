@@ -5,8 +5,10 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   CalendarDays,
+  ChevronRight,
   FileText,
   HeartHandshake,
+  Plus,
   MapPin,
   Phone,
   UserCircle2,
@@ -158,6 +160,10 @@ export default async function EmployeeDashboardPage() {
       employeeDocuments: {
         select: {
           id: true,
+          aadhaarNumber: true,
+          panNumber: true,
+          experienceType: true,
+          status: true,
           updatedAt: true,
         },
         orderBy: {
@@ -373,6 +379,84 @@ export default async function EmployeeDashboardPage() {
                 </div>
               )}
             </div>
+          </div>
+        </section>
+
+        <section className="rounded-3xl border bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-cyan-50 p-3 text-cyan-700">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  My Documents
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Add or update your identity, education, and experience
+                  records.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/employee-documents/create?from=employee-dashboard"
+                className="inline-flex h-10 items-center gap-2 rounded-2xl bg-cyan-600 px-4 text-sm font-medium text-white shadow-sm transition hover:bg-cyan-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add Document
+              </Link>
+              <Link
+                href="/employee-documents"
+                className="inline-flex h-10 items-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                View All
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {employeeProfile.employeeDocuments.length ? (
+              employeeProfile.employeeDocuments.map((document) => (
+                <div
+                  key={document.id}
+                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-slate-900">
+                        {document.experienceType.replaceAll("_", " ")}
+                      </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Updated {formatDate(document.updatedAt)}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-700">
+                      {document.status}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-1 text-sm text-slate-600">
+                    <p>Aadhaar: {document.aadhaarNumber || "-"}</p>
+                    <p>PAN: {document.panNumber || "-"}</p>
+                  </div>
+
+                  <Link
+                    href={`/employee-documents/edit/${document.id}`}
+                    className="mt-4 inline-flex text-sm font-medium text-cyan-700 hover:text-cyan-800"
+                  >
+                    Update document
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-5 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
+                No documents added yet. Add your first document to complete
+                your employee records.
+              </div>
+            )}
           </div>
         </section>
       </div>

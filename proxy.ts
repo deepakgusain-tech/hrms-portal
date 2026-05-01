@@ -2,9 +2,26 @@ import { NextResponse } from "next/server";
 
 import { auth } from "@/auth";
 
-const employeeAllowedPaths = new Set(["/employee-dashboard"]);
+const employeeAllowedPaths = [
+  "/employee-dashboard",
+  "/employee-documents",
+  "/attendance",
+];
 
-export default auth((req) => {
+type AuthenticatedRequest = {
+  nextUrl: {
+    pathname: string;
+  };
+  url: string;
+  auth?: {
+    user?: {
+      id?: string | null;
+      role?: string | null;
+    };
+  } | null;
+};
+
+export default auth((req: AuthenticatedRequest) => {
   const pathname = req.nextUrl.pathname;
   const isProtectedRoute =
     pathname === "/dashboard" ||
@@ -18,7 +35,8 @@ export default auth((req) => {
     pathname.startsWith("/employee-documents") ||
     pathname.startsWith("/department") ||
     pathname.startsWith("/work-location") ||
-    pathname.startsWith("/transfer-promotion");
+    pathname.startsWith("/transfer-promotion") ||
+    pathname.startsWith("/attendance");
 
   if (!isProtectedRoute) {
     return NextResponse.next();
@@ -30,7 +48,7 @@ export default auth((req) => {
 
   if (
     req.auth.user.role?.toLowerCase() === "employee" &&
-    !employeeAllowedPaths.has(pathname)
+    !employeeAllowedPaths.some((path) => pathname.startsWith(path))
   ) {
     return NextResponse.redirect(new URL("/employee-dashboard", req.url));
   }
@@ -52,5 +70,6 @@ export const config = {
     "/department/:path*",
     "/work-location/:path*",
     "/transfer-promotion/:path*",
+    "/attendance/:path*",
   ],
 };

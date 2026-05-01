@@ -6,18 +6,28 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getCurrentEmployeeDocumentOwner } from "@/lib/actions/employee-documents";
 import { canAccess } from "@/lib/rbac";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, FilePlus2 } from "lucide-react";
 
-const EmployeeDocumentCreatePage = async () => {
+const EmployeeDocumentCreatePage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string | string[] }>;
+}) => {
   const route = "/employee-documents";
   const canCreate = await canAccess(route, "create");
 
   if (!canCreate) {
     redirect("/404");
   }
+
+  const currentEmployee = await getCurrentEmployeeDocumentOwner();
+  const { from } = await searchParams;
+  const openedFromDashboard = from === "employee-dashboard";
+  const backHref = openedFromDashboard ? "/employee-dashboard" : "/employee-documents";
 
   return (
     <Card className="rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
@@ -44,7 +54,7 @@ const EmployeeDocumentCreatePage = async () => {
             asChild
             className="rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-5 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-lg"
           >
-            <Link href="/employee-documents">
+            <Link href={backHref}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
@@ -53,7 +63,11 @@ const EmployeeDocumentCreatePage = async () => {
       </CardHeader>
 
       <CardContent className="pt-6">
-        <EmployeeDocumentForm update={false} />
+        <EmployeeDocumentForm
+          update={false}
+          currentEmployee={currentEmployee}
+          redirectTo={backHref}
+        />
       </CardContent>
     </Card>
   );

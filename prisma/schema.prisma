@@ -238,6 +238,7 @@ model EmployeeProfile {
   projectMembers     ProjectMember[]
   tasks              Task[]
   taskComments       TaskComment[]
+  attendances        Attendance[]
 }
 
 model Module {
@@ -357,4 +358,38 @@ model TaskComment {
 
   @@index([taskId])
   @@index([employeeId])
+}
+
+model Attendance {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId String   @db.Uuid
+  date       DateTime @db.Date
+
+  checkIn  DateTime?
+  checkOut DateTime?
+
+  workingHours Float?
+  status       AttendanceStatus @default(ABSENT)
+
+  isLate    Boolean @default(false)
+  isHalfDay Boolean @default(false)
+
+  remarks String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+  @@index([date])
+  @@index([employeeId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+  HALF_DAY
+  HOLIDAY
 }

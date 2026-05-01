@@ -16,7 +16,6 @@ import {
   Upload,
   Trash2,
   Plus,
-  FileText,
   GraduationCap,
   Briefcase,
   User,
@@ -57,6 +56,8 @@ import { Textarea } from "../ui/textarea";
 type Props = {
   data?: EmployeeDocument;
   update: boolean;
+  currentEmployee?: EmployeeOption | null;
+  redirectTo?: string;
 };
 
 type EmployeeOption = {
@@ -120,17 +121,28 @@ const readFileAsDataUrl = (file: File) =>
     reader.readAsDataURL(file);
   });
 
-const EmployeeDocumentForm = ({ data, update }: Props) => {
+const EmployeeDocumentForm = ({
+  data,
+  update,
+  currentEmployee,
+  redirectTo = "/employee-documents",
+}: Props) => {
   const router = useRouter();
   const id = data?.id;
 
-  const [employees, setEmployees] = React.useState<EmployeeOption[]>([]);
+  const [employees, setEmployees] = React.useState<EmployeeOption[]>(
+    currentEmployee ? [currentEmployee] : []
+  );
   const [isPending, startTransition] = React.useTransition();
 
   const form = useForm<InputType, unknown, OutputType>({
     resolver: zodResolver(employeeDocumentSchema),
     defaultValues: (data ??
-      employeeDocumentDefaultValues) as InputType,
+      {
+        ...employeeDocumentDefaultValues,
+        employeeId: currentEmployee?.id ?? "",
+        employeeCode: currentEmployee?.employeeCode ?? "",
+      }) as InputType,
   });
 
   const experienceType = useWatch({
@@ -158,8 +170,24 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
   });
 
   useEffect(() => {
+    if (currentEmployee || data) {
+      return;
+    }
+
     getEmployeeProfileSelectOptions().then(setEmployees);
-  }, []);
+  }, [currentEmployee, data]);
+
+  useEffect(() => {
+    if (!currentEmployee || data) {
+      return;
+    }
+
+    form.reset({
+      ...form.getValues(),
+      employeeId: currentEmployee.id,
+      employeeCode: currentEmployee.employeeCode,
+    });
+  }, [currentEmployee, data, form]);
 
   useEffect(() => {
     if (data) form.reset(data);
@@ -201,7 +229,7 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
       }
 
       toast.success(res.message);
-      router.push("/employee-documents");
+      router.push(redirectTo);
       router.refresh();
     });
   };
@@ -305,6 +333,7 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
                   </FormLabel>
 
                   <Select
+                    disabled={!!currentEmployee}
                     value={field.value ?? ""}
                     onValueChange={(value) => {
                       const selected =
@@ -493,106 +522,292 @@ const EmployeeDocumentForm = ({ data, update }: Props) => {
                     </Button>
                   )}
                 </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name={`educationEntries.${index}.degree`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Degree</FormLabel>
+                        <FormControl>
+                          <Input
+                            className={fieldClass}
+                            placeholder="Enter degree"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`educationEntries.${index}.college`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>College / University</FormLabel>
+                        <FormControl>
+                          <Input
+                            className={fieldClass}
+                            placeholder="Enter college or university"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`educationEntries.${index}.year`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Passing Year</FormLabel>
+                        <FormControl>
+                          <Input
+                            className={fieldClass}
+                            placeholder="Enter passing year"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`educationEntries.${index}.marks`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Marks / Percentage</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            className={fieldClass}
+                            placeholder="Enter marks"
+                            {...field}
+                            value={
+                              typeof field.value === "number" ||
+                              typeof field.value === "string"
+                                ? field.value
+                                : ""
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {renderUpload(
+                    `educationEntries.${index}.marksheetFileUrl`,
+                    "Marksheet Upload"
+                  )}
+                </div>
               </div>
             )
           )}
         </div>
 
         {/* Experience */}
-        <div className="grid gap-5 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="experienceType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Experience Type
-                </FormLabel>
+        <div className={cardClass}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-cyan-500" />
+              <h3 className="text-lg font-semibold text-slate-800">
+                Experience Details
+              </h3>
+            </div>
 
-                <Select
-                  value={field.value ?? ""}
-                  onValueChange={(v) =>
-                    field.onChange(
-                      v as ExperienceType
-                    )
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger
-                      className={
-                        fieldClass
-                      }
-                    >
-                      <SelectValue placeholder="Select type" />
-                    </SelectTrigger>
-                  </FormControl>
-
-                  <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
-                    <SelectItem
-                      value={
-                        ExperienceType.FRESHER
-                      }
-                    >
-                      Fresher
-                    </SelectItem>
-                    <SelectItem
-                      value={
-                        ExperienceType.EXPERIENCED
-                      }
-                    >
-                      Experienced
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
+            {experienceType === ExperienceType.EXPERIENCED && (
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => appendExperience(createExperienceEntry())}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add
+              </Button>
             )}
-          />
+          </div>
 
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Status
-                </FormLabel>
+          <div className="grid gap-5 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="experienceType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Experience Type
+                  </FormLabel>
 
-                <Select
-                  value={field.value ?? ""}
-                  onValueChange={(v) =>
-                    field.onChange(
-                      v as Status
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(v) =>
+                      field.onChange(
+                        v as ExperienceType
+                      )
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        className={
+                          fieldClass
+                        }
+                      >
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                    </FormControl>
+
+                    <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
+                      <SelectItem
+                        value={
+                          ExperienceType.FRESHER
+                        }
+                      >
+                        Fresher
+                      </SelectItem>
+                      <SelectItem
+                        value={
+                          ExperienceType.EXPERIENCED
+                        }
+                      >
+                        Experienced
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Status
+                  </FormLabel>
+
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={(v) =>
+                      field.onChange(
+                        v as Status
+                      )
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger
+                        className={
+                          fieldClass
+                        }
+                      >
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                    </FormControl>
+
+                    <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
+                      <SelectItem
+                        value={Status.ACTIVE}
+                      >
+                        Active
+                      </SelectItem>
+                      <SelectItem
+                        value={
+                          Status.INACTIVE
+                        }
+                      >
+                        Inactive
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {experienceType === ExperienceType.EXPERIENCED &&
+            experienceFields.map((item, index) => (
+              <div
+                key={item.id}
+                className="space-y-4 rounded-2xl border border-slate-200 p-5"
+              >
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold">
+                    Experience {index + 1}
+                  </h4>
+
+                  {experienceFields.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-xl"
+                      onClick={() => removeExperience(index)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid gap-5 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name={`experienceEntries.${index}.totalExperience`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Total Experience</FormLabel>
+                        <FormControl>
+                          <Input
+                            className={fieldClass}
+                            placeholder="Example: 2 years"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`experienceEntries.${index}.previousCompanyName`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Previous Company</FormLabel>
+                        <FormControl>
+                          <Input
+                            className={fieldClass}
+                            placeholder="Enter previous company"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {experienceFileFields.map((fileField) =>
+                    renderUpload(
+                      `experienceEntries.${index}.${fileField.name}`,
+                      fileField.label
                     )
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger
-                      className={
-                        fieldClass
-                      }
-                    >
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                  </FormControl>
-
-                  <SelectContent className="rounded-2xl border border-slate-200 shadow-xl">
-                    <SelectItem
-                      value={Status.ACTIVE}
-                    >
-                      Active
-                    </SelectItem>
-                    <SelectItem
-                      value={
-                        Status.INACTIVE
-                      }
-                    >
-                      Inactive
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </FormItem>
-            )}
-          />
+                  )}
+                </div>
+              </div>
+            ))}
         </div>
 
         {/* Remark */}
