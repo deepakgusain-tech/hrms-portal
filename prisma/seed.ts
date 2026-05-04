@@ -86,7 +86,9 @@
         description: "Leave Request Management Module",
         route: "/leave-requests",
       },
-      { name: "Company", description: "Company Module", route: "/companies" },
+      { name: "Project Creation", description: "Project Creation Module", route: "/projects" },
+      { name: "Project Members", description: "Project Members Module", route: "/project-members" },
+     
       { name: "Employer", description: "Employer Module", route: "/employers" },
       {
         name: "Configuration",

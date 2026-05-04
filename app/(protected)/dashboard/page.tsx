@@ -94,7 +94,7 @@ export default async function DashboardPage() {
         {stats.map((item) => (
           <div
             key={item.title}
-            className="flex justify-between gap-4 rounded-3xl border border-white/60 bg-white/80 p-4 backdrop-blur-md shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+            className="flex justify-between gap-4 items-center rounded-3xl border border-white/60 bg-white/80 p-5 backdrop-blur-md shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
           >
             <div className="mb-4 flex flex-col justify-start space-y-4">
               <div className="rounded-2xl w-9 text-center bg-gradient-to-br from-indigo-100 to-cyan-100 p-2 text-indigo-600">
