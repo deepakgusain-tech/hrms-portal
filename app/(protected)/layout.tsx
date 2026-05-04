@@ -34,7 +34,7 @@ export default async function ProtectedLayout({
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar
         user={sidebarUser}
         role={session.user.role}

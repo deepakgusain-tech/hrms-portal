@@ -30,7 +30,15 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { usePathname } from "next/navigation";
 
 type SidebarUser = {
   name?: string;
@@ -251,6 +259,14 @@ export function AppSidebar({
   const companyName = config?.name?.trim() || "SY ASSOCIATES";
   const logoSrc = config?.logo?.trim() || "";
 
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  const pathname = usePathname()
+
+  console.log(pathname);
+
+
   return (
     <Sidebar
       collapsible="icon"
@@ -295,15 +311,43 @@ export function AppSidebar({
           ) : (
             <SidebarMenu key={group.name}>
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  className="rounded-2xl text-white hover:bg-white/15 hover:text-white transition-all duration-200 data-[active=true]:bg-white data-[active=true]:text-indigo-700 data-[active=true]:shadow-lg"
-                >
-                  <Link href={group.url!}>
-                    {group.icon}
-                    <span>{group.name}</span>
-                  </Link>
-                </SidebarMenuButton>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton
+                        asChild
+                        size="lg"
+                        className={`
+                        rounded-2xl cursor-pointer transition-all duration-200
+                        ${pathname === group.url
+                            ? "bg-indigo-800 text-white shadow-lg ring-1 ring-white/20"
+                            : "text-white hover:bg-white/15 hover:text-white"
+                          }
+                      `}
+                      >
+                        <Link href={group.url!}>
+                          <div
+                            className={`
+                              flex aspect-square size-8 items-center justify-center rounded-xl
+                              ${pathname === group.url
+                                ? "bg-white/20 text-white"
+                                : "border border-white/30 bg-white/20 text-white"
+                              }
+                            `}
+                          >
+                            {group.icon}
+                          </div>
+                          <span>{group.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    {isCollapsed && (
+                      <TooltipContent side="right" className="bg-slate-900 text-white border-0">
+                        {group.name}
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </SidebarMenuItem>
             </SidebarMenu>
           )
