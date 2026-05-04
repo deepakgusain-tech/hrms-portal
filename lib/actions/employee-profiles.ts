@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "../prisma";
 import { formatError } from "../utils";
 import { employeeProfileSchema } from "../validators";
+import { getProjectById } from "./projects";
 
 type ActionResponse = {
   success: boolean;
@@ -61,6 +62,7 @@ function mapEmployeeProfile(record: {
   employeeId: string | null;
   employeeName: string;
   employeeCode: string;
+  email: string;
   companyId: string | null;
   phone: string;
   alternatePhone: string | null;
@@ -86,6 +88,7 @@ function mapEmployeeProfile(record: {
   return {
     id: record.id,
     employeeId: record.employeeId ?? "",
+    email: record.email ?? "",
     employeeName:
       record.employeeName ||
       (record.employee
@@ -147,7 +150,7 @@ const employeeProfileInclude = {
 
 export async function getEmployeeProfileOptions() {
   try {
-    const [employees, companies, departments, jobRoles, workLocations] =
+    const [employees, companies, departments, jobRoles, workLocations, projects] =
       await Promise.all([
         prisma.user.findMany({
           orderBy: { firstName: "asc" },
@@ -169,6 +172,10 @@ export async function getEmployeeProfileOptions() {
           orderBy: { name: "asc" },
           select: { id: true, name: true },
         }),
+        prisma.project.findMany({
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        }),
       ]);
 
     return {
@@ -177,6 +184,7 @@ export async function getEmployeeProfileOptions() {
       departments,
       jobRoles,
       workLocations,
+      projects
     };
   } catch {
     return {
@@ -185,6 +193,7 @@ export async function getEmployeeProfileOptions() {
       departments: [],
       jobRoles: [],
       workLocations: [],
+      projects: []
     };
   }
 }
@@ -218,6 +227,7 @@ export interface EmployeeFilters {
   status?: string;
   joiningDateFrom?: string;
   joiningDateTo?: string;
+  project?: string;
 }
 
 export async function getEmployeeProfiles(): Promise<EmployeeProfile[]> {
@@ -244,6 +254,25 @@ export async function getFilteredEmployeeProfiles(
         contains: filters.employeeId,
         mode: "insensitive",
       };
+    }
+
+    if (filters.project) {
+      const project = await prisma.project.findFirst({
+        where: {
+          name: {
+            equals: filters.project,
+            mode: "insensitive",
+          },
+        },
+      });
+
+      if (project) {
+        where.projectMembers = {
+          some: {
+            projectId: project.id,
+          },
+        };
+      }
     }
 
     if (filters.employeeName) {
@@ -303,8 +332,14 @@ export async function getFilteredEmployeeProfiles(
     const records = await prisma.employeeProfile.findMany({
       where,
       orderBy: { createdAt: "desc" },
-      include: employeeProfileInclude,
+      include: {
+        ...employeeProfileInclude,
+        projectMembers: true,
+      }
     });
+
+    console.log(records);
+
 
     return records.map(mapEmployeeProfile);
   } catch (error) {
@@ -322,8 +357,8 @@ export async function createEmployeeProfile(
 
     const hashedPassword =
       record.employeeId &&
-      record.password &&
-      record.password !== EXISTING_PASSWORD_SENTINEL
+        record.password &&
+        record.password !== EXISTING_PASSWORD_SENTINEL
         ? await bcrypt.hash(record.password, 10)
         : null;
 
@@ -332,7 +367,7 @@ export async function createEmployeeProfile(
         data: {
           employeeName: record.employeeName.trim(),
           employeeCode,
-
+          email: record.email,
           employeeId: record.employeeId || null,
           companyId: record.companyId || null,
           departmentId: record.departmentId || null,
@@ -411,8 +446,8 @@ export async function updateEmployeeProfile(
 
     const hashedPassword =
       record.employeeId &&
-      record.password &&
-      record.password !== EXISTING_PASSWORD_SENTINEL
+        record.password &&
+        record.password !== EXISTING_PASSWORD_SENTINEL
         ? await bcrypt.hash(record.password, 10)
         : null;
 
@@ -434,7 +469,7 @@ export async function updateEmployeeProfile(
         data: {
           employeeName: record.employeeName.trim(),
           employeeCode: record.employeeCode || existingRecord.employeeCode,
-
+          email: record.email,
           employeeId: record.employeeId || null,
           companyId: record.companyId || null,
           departmentId: record.departmentId || null,

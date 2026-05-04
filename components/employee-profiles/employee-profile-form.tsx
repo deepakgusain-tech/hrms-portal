@@ -211,6 +211,23 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
             )}
           />
 
+           <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Employee Email</FormLabel>
+                <FormControl>
+                  <Input
+                    className={fieldClass}
+                    placeholder="Enter Email Id"
+                    {...field}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
           <FormField
             control={form.control}
             name="password"

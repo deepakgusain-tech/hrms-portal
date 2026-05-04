@@ -6,6 +6,7 @@ export default async function DashboardDesignPage() {
   const [employees, options] = await Promise.all([
     getEmployeeProfiles(),
     getEmployeeProfileOptions(),
+
   ]);
 
   return (
@@ -15,6 +16,7 @@ export default async function DashboardDesignPage() {
       departments={options.departments}
       jobRoles={options.jobRoles}
       workLocations={options.workLocations}
+      projects={options.projects}
     />
   );
 }

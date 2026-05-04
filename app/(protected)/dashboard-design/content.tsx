@@ -15,6 +15,7 @@ interface DashboardDesignContentProps {
   departments: Array<{ id: string; name: string }>;
   jobRoles: Array<{ id: string; name: string }>;
   workLocations: Array<{ id: string; name: string }>;
+  projects: Array<{ id: string; name: string }>;
 }
 
 export default function DashboardDesignContent({
@@ -23,6 +24,7 @@ export default function DashboardDesignContent({
   departments,
   jobRoles,
   workLocations,
+  projects
 }: DashboardDesignContentProps) {
   const [employees, setEmployees] = useState<EmployeeProfile[]>(initialEmployees);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,22 +54,20 @@ export default function DashboardDesignContent({
   }, []);
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex mt-[-30px] bg-gray-100">
       <FilterPanel
         companies={companies}
         departments={departments}
         jobRoles={jobRoles}
         workLocations={workLocations}
+        projects={projects}
         onApplyFilters={handleApplyFilters}
         onResetFilters={handleResetFilters}
       />
       <div className="flex-1 overflow-auto">
         <div className="p-6">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Employee Dashboard</h1>
-            <p className="text-gray-600 mt-2">
-              Manage and view all employees with advanced filtering options
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900">Search Employee</h1>
           </div>
           <EmployeeList employees={employees} isLoading={isLoading} />
         </div>

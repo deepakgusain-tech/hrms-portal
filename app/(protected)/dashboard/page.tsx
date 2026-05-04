@@ -13,6 +13,10 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { getEmployeeProfiles } from "@/lib/actions/employee-profiles";
+import { getDepartments } from "@/lib/actions/department";
+import { getProjects } from "@/lib/actions/projects";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -22,19 +26,23 @@ export default async function DashboardPage() {
     redirect("/employee-dashboard");
   }
 
+  let employees = await getEmployeeProfiles();
+  let departments = await getDepartments();
+  let projects = await getProjects();
+
   const stats = [
-    { title: "Total Employees", value: "120", icon: Users },
-    { title: "Active Employees", value: "105", icon: Users },
-    { title: "New Hires", value: "6", icon: UserPlus },
-    { title: "Attrition", value: "2", icon: UserMinus },
-    { title: "Departments", value: "5", icon: Building },
-    { title: "Projects", value: "8", icon: Briefcase },
-    { title: "Payroll", value: "₹5.2L", icon: IndianRupee },
-    { title: "Compliance", value: "92%", icon: ShieldCheck },
-    { title: "Approvals", value: "7", icon: Clock },
+    { title: "Total Employees", value: employees.length, icon: Users },
+    // { title: "Active Employees", value: "105", icon: Users },
+    // { title: "New Hires", value: "6", icon: UserPlus },
+    // { title: "Attrition", value: "2", icon: UserMinus },
+    { title: "Departments", value: departments.length, icon: Building },
+    { title: "Projects", value: projects.length, icon: Briefcase },
+    // { title: "Payroll", value: "₹5.2L", icon: IndianRupee },
+    // { title: "Compliance", value: "92%", icon: ShieldCheck },
+    // { title: "Approvals", value: "7", icon: Clock },
     { title: "Attendance", value: "98", icon: CalendarCheck },
-    { title: "Growth", value: "+12%", icon: TrendingUp },
-    { title: "Alerts", value: "3", icon: AlertTriangle },
+    // { title: "Growth", value: "+12%", icon: TrendingUp },
+    // { title: "Alerts", value: "3", icon: AlertTriangle },
   ];
 
   const approvals = [
@@ -56,6 +64,16 @@ export default async function DashboardPage() {
     { dept: "HR", open: 1 },
   ];
 
+  const actions = [
+    { label: "Add Employee", href: "/employee-profiles/add" },
+    { label: "Add Department", href: "/department/add" },
+    { label: "Manage Roles", href: "/roles" },
+    // { label: "Run Payroll", href: "/payroll" },
+    // { label: "View Reports", href: "/reports" },
+    { label: "System Settings", href: "/configuration" },
+  ];
+
+
   return (
     <div className="space-y-6 bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-50 p-1">
       {/* Header */}
@@ -64,30 +82,30 @@ export default async function DashboardPage() {
         <div className="absolute bottom-0 left-10 h-24 w-24 rounded-full bg-cyan-300/20 blur-2xl" />
 
         <h1 className="relative text-2xl font-bold md:text-3xl">
-          Admin Dashboard
+          Welcome Back {session.user.name}
         </h1>
-        <p className="relative mt-2 text-sm text-cyan-100">
-          Organization-wide control and insights
-        </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
         {stats.map((item) => (
           <div
             key={item.title}
-            className="rounded-3xl border border-white/60 bg-white/80 p-4 backdrop-blur-md shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+            className="flex justify-between gap-4 rounded-3xl border border-white/60 bg-white/80 p-4 backdrop-blur-md shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <div className="rounded-2xl bg-gradient-to-br from-indigo-100 to-cyan-100 p-2 text-indigo-600">
+            <div className="mb-4 flex flex-col justify-start space-y-4">
+              <div className="rounded-2xl w-9 text-center bg-gradient-to-br from-indigo-100 to-cyan-100 p-2 text-indigo-600">
                 <item.icon size={18} />
               </div>
+              <p className="text-xs  font-medium text-slate-500">{item.title}</p>
             </div>
 
-            <p className="text-xs font-medium text-slate-500">{item.title}</p>
-            <p className="mt-1 text-xl font-bold text-slate-800">
-              {item.value}
-            </p>
+            <div>
+              <p className="mt-1 text-xl font-bold text-slate-800">
+                {item.value}
+              </p>
+            </div>
+
           </div>
         ))}
       </div>
@@ -185,27 +203,21 @@ export default async function DashboardPage() {
           </h2>
 
           <div className="grid grid-cols-2 gap-3 text-sm">
-            {[
-              "Add Employee",
-              "Add Department",
-              "Manage Roles",
-              "Run Payroll",
-              "View Reports",
-              "System Settings",
-            ].map((btn) => (
-              <button
-                key={btn}
-                className="rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-3 py-2 font-medium text-white shadow transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-              >
-                {btn}
-              </button>
+            {actions.map((btn) => (
+              <Link key={btn.label} href={btn.href} className="cursor-pointer">
+                <button
+                  className="w-full cursor-pointer rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-3 py-2 font-medium text-white shadow transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  {btn.label}
+                </button>
+              </Link>
             ))}
           </div>
         </div>
       </div>
 
       {/* Compliance */}
-      <div className="rounded-3xl border border-white/60 bg-white/80 p-5 backdrop-blur-md shadow-md">
+      {/* <div className="rounded-3xl border border-white/60 bg-white/80 p-5 backdrop-blur-md shadow-md">
         <h2 className="mb-4 font-semibold text-slate-800">
           Compliance & Documents
         </h2>
@@ -228,10 +240,10 @@ export default async function DashboardPage() {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Activity */}
-      <div className="rounded-3xl border border-white/60 bg-white/80 p-5 backdrop-blur-md shadow-md">
+      {/* <div className="rounded-3xl border border-white/60 bg-white/80 p-5 backdrop-blur-md shadow-md">
         <h2 className="mb-4 font-semibold text-slate-800">System Activity</h2>
 
         <div className="space-y-3 text-sm text-slate-600">
@@ -249,7 +261,7 @@ export default async function DashboardPage() {
             </div>
           ))}
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

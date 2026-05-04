@@ -206,6 +206,7 @@ model EmployeeProfile {
   employeeId   String? @unique @db.Uuid
   employeeName String
   employeeCode String  @unique
+  email        String  @unique
 
   companyId String? @db.Uuid
 

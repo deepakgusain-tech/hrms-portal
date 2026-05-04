@@ -24,15 +24,17 @@ interface FilterPanelProps {
   departments: Array<{ id: string; name: string }>;
   jobRoles: Array<{ id: string; name: string }>;
   workLocations: Array<{ id: string; name: string }>;
+  projects: Array<{ id: string; name: string }>;
   onApplyFilters: (filters: EmployeeFilters) => void;
   onResetFilters: () => void;
 }
 
-export default function FilterPanel({
+export default function   FilterPanel({
   companies,
   departments,
   jobRoles,
   workLocations,
+  projects,
   onApplyFilters,
   onResetFilters,
 }: FilterPanelProps) {
@@ -77,6 +79,7 @@ export default function FilterPanel({
               </label>
               <Input
                 placeholder="Enter Employee ID"
+                className="w-full"
                 value={filters.employeeId || ""}
                 onChange={(e) => handleInputChange("employeeId", e.target.value)}
               />
@@ -87,6 +90,7 @@ export default function FilterPanel({
               </label>
               <Input
                 placeholder="Enter Full Name"
+                className="w-full"
                 value={filters.employeeName || ""}
                 onChange={(e) => handleInputChange("employeeName", e.target.value)}
               />
@@ -97,8 +101,28 @@ export default function FilterPanel({
               </label>
               <Input
                 placeholder="Enter Phone Number"
+                className="w-full"
                 value={filters.phone || ""}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="project">
+          <AccordionTrigger className="text-sm font-semibold">
+            Project
+          </AccordionTrigger>
+          <AccordionContent>
+            <div>
+              <label className="text-xs font-medium text-gray-700 block mb-1">
+                Project
+              </label>
+              <Input
+                placeholder="Enter Project Name"
+                className="w-full"
+                value={filters.project || ""}
+                onChange={(e) => handleInputChange("project", e.target.value)}
               />
             </div>
           </AccordionContent>
@@ -118,7 +142,7 @@ export default function FilterPanel({
                 value={filters.companyId || ""}
                 onValueChange={(value) => handleInputChange("companyId", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Company" />
                 </SelectTrigger>
                 <SelectContent>
@@ -139,7 +163,7 @@ export default function FilterPanel({
                 value={filters.departmentId || ""}
                 onValueChange={(value) => handleInputChange("departmentId", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Department" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,7 +184,7 @@ export default function FilterPanel({
                 value={filters.workLocationId || ""}
                 onValueChange={(value) => handleInputChange("workLocationId", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Location" />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,7 +213,7 @@ export default function FilterPanel({
                 value={filters.jobRoleId || ""}
                 onValueChange={(value) => handleInputChange("jobRoleId", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -216,6 +240,7 @@ export default function FilterPanel({
               </label>
               <Input
                 type="date"
+                className="w-full"
                 value={filters.joiningDateFrom || ""}
                 onChange={(e) =>
                   handleInputChange("joiningDateFrom", e.target.value)
@@ -228,6 +253,7 @@ export default function FilterPanel({
               </label>
               <Input
                 type="date"
+                className="w-full"
                 value={filters.joiningDateTo || ""}
                 onChange={(e) => handleInputChange("joiningDateTo", e.target.value)}
               />
@@ -249,7 +275,7 @@ export default function FilterPanel({
                 value={filters.status || ""}
                 onValueChange={(value) => handleInputChange("status", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>

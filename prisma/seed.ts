@@ -342,6 +342,7 @@
         employeeId: employeeUser.id,
         employeeName: "Rahul Sharma",
         employeeCode: "EMP001",
+        email: "rahul@gmail.com",
         companyId: company.id,
         phone: "9876543210",
         alternatePhone: "9876500000",
