@@ -152,7 +152,10 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
   try {
     const existingUser = await prisma.user.findFirst({
       where: {
-        username: normalizedUser.username,
+        OR: [
+          { username: normalizedUser.username },
+          { email: normalizedUser.username },
+        ],
       },
       include: {
         role: {
@@ -163,6 +166,29 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
       },
     });
 
+    const existingEmployee = !existingUser
+      ? await prisma.employeeProfile.findFirst({
+          where: {
+            email: normalizedUser.username,
+          },
+          select: {
+            id: true,
+          },
+        })
+      : null;
+
+    const existingEmployer =
+      !existingUser && !existingEmployee
+        ? await prisma.employer.findFirst({
+            where: {
+              email: normalizedUser.username,
+            },
+            select: {
+              id: true,
+            },
+          })
+        : null;
+
     await signIn("credentials", { ...normalizedUser, redirect: false });
     
     return {
@@ -171,6 +197,10 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
       redirectTo:
         existingUser?.role?.name?.toLowerCase() === "employee"
           ? "/employee-dashboard"
+          : existingEmployee
+            ? "/employee-dashboard"
+            : existingEmployer
+              ? "/dashboard"
           : "/dashboard",
     };
   } catch (error) {

@@ -192,6 +192,22 @@ function getMenuByRole(role?: SidebarRole): MenuGroup[] {
     ];
   }
 
+  if (role?.toLowerCase() === "employer") {
+    return [
+      {
+        name: "Dashboard",
+        icon: <Gauge size={18} />,
+        children: [
+          {
+            name: "Employer Dashboard",
+            url: "/dashboard",
+            icon: <Gauge size={18} />,
+          },
+        ],
+      },
+    ];
+  }
+
   return menu;
 }
 
@@ -200,7 +216,7 @@ function filterMenuByAccess(
   role: SidebarRole,
   accessibleRoutes: string[]
 ) {
-  if (role?.toLowerCase() === "employee") {
+  if (role?.toLowerCase() === "employee" || role?.toLowerCase() === "employer") {
     return menuGroups;
   }
 

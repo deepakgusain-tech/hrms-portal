@@ -101,20 +101,48 @@ async function getCurrentUser() {
     where: { email: session.user.email },
     include: {
       role: true,
-      employeeProfile: {
-        select: {
-          id: true,
-          employeeName: true,
-        },
-      },
     },
   });
 
   if (!user) {
-    throw new Error("Unauthorized");
+    if (session.user.role?.toLowerCase() !== "employee") {
+      throw new Error("Unauthorized");
+    }
+
+    const employeeProfile = await prisma.employeeProfile.findFirst({
+      where: { email: session.user.email },
+      select: {
+        id: true,
+        employeeName: true,
+      },
+    });
+
+    if (!employeeProfile) {
+      throw new Error("Employee profile not found for current user");
+    }
+
+    return {
+      id: session.user.id,
+      email: session.user.email,
+      role: {
+        name: "employee",
+      },
+      employeeProfile,
+    };
   }
 
-  return user;
+  const employeeProfile = await prisma.employeeProfile.findFirst({
+    where: { email: user.email },
+    select: {
+      id: true,
+      employeeName: true,
+    },
+  });
+
+  return {
+    ...user,
+    employeeProfile,
+  };
 }
 
 function mapLeaveRequest(

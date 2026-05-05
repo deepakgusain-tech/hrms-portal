@@ -28,7 +28,7 @@ const LoginForm = () => {
 
         if (!user || !pass) {
             event.preventDefault();
-            setError("Username and password are required.");
+            setError("Username or email and password are required.");
             return;
         }
 
@@ -56,10 +56,10 @@ const LoginForm = () => {
             )}
 
             <div>
-                <label className="text-sm text-gray-700">Username</label>
+                <label className="text-sm text-gray-700">Username or Email</label>
                 <input
                     type="text"
-                    placeholder="admin"
+                    placeholder="admin or name@example.com"
                     name='username'
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full mt-1 px-4 py-2 rounded-lg bg-gray-100 border outline-none"

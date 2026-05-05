@@ -70,8 +70,7 @@ model User {
   roleId    String   @db.Uuid
   role      Role     @relation(fields: [roleId], references: [id])
 
-  employeeProfile EmployeeProfile?
-  projects        Project[]
+  projects              Project[]
   reviewedLeaveRequests LeaveRequest[]
 }
 
@@ -204,10 +203,11 @@ model EmployeeDocument {
 
 model EmployeeProfile {
   id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  employeeId   String? @unique @db.Uuid
+  managerId    String? @db.Uuid
   employeeName String
   employeeCode String  @unique
-  email        String  
+  email        String  @unique
+  password     String?
 
   companyId String? @db.Uuid
 
@@ -229,11 +229,12 @@ model EmployeeProfile {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  employee     User?         @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  company      Company?      @relation(fields: [companyId], references: [id])
-  department   Department?   @relation(fields: [departmentId], references: [id])
-  jobRole      JobRole?      @relation(fields: [jobRoleId], references: [id])
-  workLocation WorkLocation? @relation(fields: [workLocationId], references: [id])
+  manager       EmployeeProfile?  @relation("EmployeeProfileManager", fields: [managerId], references: [id], onDelete: SetNull)
+  directReports EmployeeProfile[] @relation("EmployeeProfileManager")
+  company       Company?          @relation(fields: [companyId], references: [id])
+  department    Department?       @relation(fields: [departmentId], references: [id])
+  jobRole       JobRole?          @relation(fields: [jobRoleId], references: [id])
+  workLocation  WorkLocation?     @relation(fields: [workLocationId], references: [id])
 
   employeeDocuments  EmployeeDocument[]
   transferPromotions TransferPromotion[]
@@ -242,6 +243,8 @@ model EmployeeProfile {
   taskComments       TaskComment[]
   attendances        Attendance[]
   leaveRequests      LeaveRequest[]
+
+  @@index([managerId])
 }
 
 model Module {

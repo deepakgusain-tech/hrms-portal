@@ -113,9 +113,10 @@ export const employeeDocumentDefaultValues = {
 
 /* ---------------- EMPLOYEE PROFILE ---------------- */
 export const employeeProfileDefaultValues = {
-  employeeId: "",
+  managerId: "",
   employeeName: "",
   employeeCode: "",
+  email: "",
   password: "",
   companyId: "",
   phone: "",

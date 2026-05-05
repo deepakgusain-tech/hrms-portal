@@ -53,6 +53,7 @@ export type EmployeeProfile = z.infer<typeof employeeProfileSchema> & {
   companyName?: string;
   departmentName?: string;
   jobRoleName?: string;
+  managerName?: string;
   workLocationName?: string;
 };
 

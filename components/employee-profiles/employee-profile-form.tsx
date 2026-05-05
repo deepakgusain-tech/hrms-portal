@@ -52,31 +52,27 @@ type CompanyOption = {
   companyName: string;
 };
 
-type EmployeeOption = {
+type ManagerOption = {
   id: string;
-  firstName: string;
-  lastName: string;
+  employeeName: string;
+  employeeCode: string;
 };
 
 const NONE_VALUE = "none";
-const EMPLOYEE_NAME_LIST_ID = "employee-profile-list";
 const EXISTING_PASSWORD_SENTINEL = "__KEEP__";
+const PASSWORD_MASK = "********";
 
 const fieldClass =
   "h-12 w-full rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-cyan-300 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 outline-none";
 
 const textAreaClass =
   "min-h-28 w-full rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-cyan-300 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 outline-none";
-const getEmployeeName = (employee: EmployeeOption) =>
-  `${employee.firstName} ${employee.lastName}`.trim();
-
-const normalize = (value: string) => value.trim().toLowerCase();
 
 const EmployeeProfileForm = ({ data, update }: Props) => {
   const router = useRouter();
   const id = data?.id;
 
-  const [employees, setEmployees] = React.useState<EmployeeOption[]>([]);
+  const [managers, setManagers] = React.useState<ManagerOption[]>([]);
   const [departments, setDepartments] = React.useState<Option[]>([]);
   const [jobRoles, setJobRoles] = React.useState<Option[]>([]);
   const [workLocations, setWorkLocations] = React.useState<Option[]>([]);
@@ -85,27 +81,19 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
   const [isPending, startTransition] = React.useTransition();
 
   const form = useForm<z.infer<typeof employeeProfileSchema>>({
-    resolver: zodResolver(employeeProfileSchema),
-    defaultValues: data
-      ? {
-          ...data,
-          password: update && data.employeeId ? EXISTING_PASSWORD_SENTINEL : "",
-        }
-      : employeeProfileDefaultValues,
+    resolver: zodResolver(employeeProfileSchema) as any,
+    defaultValues: data ?? employeeProfileDefaultValues,
   });
 
   useEffect(() => {
     if (data) {
-      form.reset({
-        ...data,
-        password: update && data.employeeId ? EXISTING_PASSWORD_SENTINEL : "",
-      });
+      form.reset(data);
     }
-  }, [data, form, update]);
+  }, [data, form]);
 
   useEffect(() => {
     getEmployeeProfileOptions().then((options) => {
-      setEmployees(options.employees);
+      setManagers(options.managers);
       setDepartments(options.departments);
       setCompanies(options.companies);
       setJobRoles(options.jobRoles);
@@ -144,6 +132,11 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
     });
   };
 
+  const availableManagers = React.useMemo(
+    () => managers.filter((manager) => manager.id !== id),
+    [id, managers],
+  );
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -157,37 +150,11 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
                 <FormLabel>Employee Name</FormLabel>
                 <FormControl>
                   <Input
-                    list={EMPLOYEE_NAME_LIST_ID}
                     className={fieldClass}
                     placeholder="Enter employee name"
-                    value={field.value}
-                    onBlur={field.onBlur}
-                    ref={field.ref}
-                    name={field.name}
-                    onChange={(e) => {
-                      const value = e.target.value;
-
-                      const match = employees.find(
-                        (item) =>
-                          normalize(getEmployeeName(item)) === normalize(value),
-                      );
-
-                      field.onChange(value);
-
-                      form.setValue("employeeId", match?.id ?? "", {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
-                    }}
+                    {...field}
                   />
                 </FormControl>
-
-                <datalist id={EMPLOYEE_NAME_LIST_ID}>
-                  {employees.map((item) => (
-                    <option key={item.id} value={getEmployeeName(item)} />
-                  ))}
-                </datalist>
-
                 <FormMessage />
               </FormItem>
             )}
@@ -211,7 +178,7 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
             )}
           />
 
-           <FormField
+          <FormField
             control={form.control}
             name="email"
             render={({ field }) => (
@@ -238,11 +205,28 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
                   <Input
                     type="password"
                     className={fieldClass}
-                    placeholder="Enter password"
-                    {...field}
-                    value={field.value ?? ""}
+                    placeholder={
+                      update
+                        ? "Leave blank to keep current password"
+                        : "Enter password"
+                    }
+                    value={
+                      field.value === EXISTING_PASSWORD_SENTINEL
+                        ? PASSWORD_MASK
+                        : field.value || ""
+                    }
+                    onFocus={() => {
+                      if (field.value === EXISTING_PASSWORD_SENTINEL) {
+                        field.onChange("");
+                      }
+                    }}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -335,7 +319,7 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
                 <FormLabel>Company</FormLabel>
 
                 <Select
-                  value={field.value || ""}
+                  value={field.value ?? undefined}   // ✅ FIXED
                   onValueChange={field.onChange}
                 >
                   <FormControl>
@@ -352,6 +336,41 @@ const EmployeeProfileForm = ({ data, update }: Props) => {
                     ))}
                   </SelectContent>
                 </Select>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="managerId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Manager</FormLabel>
+
+                <Select
+                  value={field.value || NONE_VALUE}
+                  onValueChange={(value) =>
+                    field.onChange(value === NONE_VALUE ? "" : value)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger className={fieldClass}>
+                      <SelectValue placeholder="Select manager" />
+                    </SelectTrigger>
+                  </FormControl>
+
+                  <SelectContent className="rounded-2xl border border-indigo-100">
+                    <SelectItem value={NONE_VALUE}>None</SelectItem>
+
+                    {availableManagers.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.employeeName} ({item.employeeCode})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <FormMessage />
               </FormItem>
             )}
           />

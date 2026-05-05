@@ -27,6 +27,38 @@ export default async function DashboardPage() {
   if (session.user.role?.toLowerCase() === "employee") {
     redirect("/employee-dashboard");
   }
+  if (session.user.role?.toLowerCase() === "employer") {
+    return (
+      <div className="space-y-6 bg-gradient-to-br from-slate-50 via-cyan-50 to-indigo-50 p-1">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-sky-700 via-cyan-600 to-emerald-500 px-6 py-7 text-white shadow-2xl">
+          <h1 className="relative text-2xl font-bold md:text-3xl">
+            Welcome Back {session.user.name || "Employer"}
+          </h1>
+          <p className="relative mt-3 max-w-2xl text-sm text-cyan-50">
+            You are signed in with your employer account.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 backdrop-blur-md shadow-md">
+            <h2 className="text-lg font-semibold text-slate-800">Account</h2>
+            <div className="mt-4 space-y-3 text-sm text-slate-600">
+              <p>Name: {session.user.name || "-"}</p>
+              <p>Email: {session.user.email || "-"}</p>
+              <p>Role: Employer</p>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/60 bg-white/80 p-6 backdrop-blur-md shadow-md">
+            <h2 className="text-lg font-semibold text-slate-800">Access</h2>
+            <p className="mt-4 text-sm text-slate-600">
+              Employer authentication is active. This account can now sign in with its own email and password.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const leaveSummary = await getLeaveDashboard();
   const employees = await getEmployeeProfiles();
@@ -68,8 +100,8 @@ export default async function DashboardPage() {
   ];
 
   const actions = [
-    { label: "Add Employee", href: "/employee-profiles/add" },
-    { label: "Add Department", href: "/department/add" },
+    { label: "Add Employee", href: "/employee-profiles/create" },
+    { label: "Add Department", href: "/department/create" },
     { label: "Manage Roles", href: "/roles" },
     // { label: "Run Payroll", href: "/payroll" },
     // { label: "View Reports", href: "/reports" },

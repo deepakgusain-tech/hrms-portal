@@ -49,7 +49,7 @@ async function getCurrentEmployeeAccess(): Promise<EmployeeDocumentAccess> {
   const session = await auth();
   const isEmployee = session?.user?.role?.toLowerCase() === "employee";
 
-  if (!isEmployee || !session?.user?.id) {
+  if (!isEmployee || !session?.user?.email) {
     return {
       isEmployee,
       owner: null,
@@ -58,7 +58,7 @@ async function getCurrentEmployeeAccess(): Promise<EmployeeDocumentAccess> {
 
   const owner = await prisma.employeeProfile.findFirst({
     where: {
-      employeeId: session.user.id,
+      email: session.user.email,
     },
     select: {
       id: true,

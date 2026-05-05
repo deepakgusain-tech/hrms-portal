@@ -1,13 +1,12 @@
 "use server";
 
-import { Status } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { EmployeeProfile } from "@/types";
 import bcrypt from "bcrypt";
 import { revalidatePath } from "next/cache";
 import { prisma } from "../prisma";
 import { formatError } from "../utils";
 import { employeeProfileSchema } from "../validators";
-import { getProjectById } from "./projects";
 
 type ActionResponse = {
   success: boolean;
@@ -18,6 +17,10 @@ const EXISTING_PASSWORD_SENTINEL = "__KEEP__";
 
 function toDate(value?: string | null) {
   return value ? new Date(value) : null;
+}
+
+function connectRelation(id?: string | null) {
+  return id ? { connect: { id } } : { disconnect: true };
 }
 
 function getNextEmployeeCode(codes: string[]) {
@@ -57,43 +60,16 @@ export async function getNextEmployeeCodePreview() {
   }
 }
 
-function mapEmployeeProfile(record: {
-  id: string;
-  employeeId: string | null;
-  employeeName: string;
-  employeeCode: string;
-  email: string;
-  companyId: string | null;
-  phone: string;
-  alternatePhone: string | null;
-  gender: string | null;
-  dateOfBirth: Date | null;
-  joiningDate: Date;
-  departmentId: string | null;
-  jobRoleId: string | null;
-  workLocationId: string | null;
-  address: string | null;
-  emergencyContactName: string | null;
-  emergencyContactPhone: string | null;
-  remark: string | null;
-  status: Status;
-  createdAt: Date;
-  updatedAt: Date;
-  employee?: { firstName: string; lastName: string } | null;
-  company?: { companyName: string } | null;
-  department?: { name: string } | null;
-  jobRole?: { name: string } | null;
-  workLocation?: { name: string } | null;
-}): EmployeeProfile {
+type EmployeeProfileRecord = Prisma.EmployeeProfileGetPayload<{
+  include: typeof employeeProfileInclude;
+}>;
+
+function mapEmployeeProfile(record: EmployeeProfileRecord): EmployeeProfile {
   return {
     id: record.id,
-    employeeId: record.employeeId ?? "",
+    managerId: record.managerId ?? "",
     email: record.email ?? "",
-    employeeName:
-      record.employeeName ||
-      (record.employee
-        ? `${record.employee.firstName} ${record.employee.lastName}`.trim()
-        : ""),
+    employeeName: record.employeeName,
     employeeCode: record.employeeCode,
     companyId: record.companyId ?? "",
     phone: record.phone,
@@ -104,7 +80,7 @@ function mapEmployeeProfile(record: {
     departmentId: record.departmentId ?? "",
     jobRoleId: record.jobRoleId ?? "",
     workLocationId: record.workLocationId ?? "",
-    password: "",
+    password: record.password ? EXISTING_PASSWORD_SENTINEL : "",
     address: record.address ?? "",
     emergencyContactName: record.emergencyContactName ?? "",
     emergencyContactPhone: record.emergencyContactPhone ?? "",
@@ -115,15 +91,16 @@ function mapEmployeeProfile(record: {
     companyName: record.company?.companyName ?? "",
     departmentName: record.department?.name ?? "",
     jobRoleName: record.jobRole?.name ?? "",
+    managerName: record.manager?.employeeName ?? "",
     workLocationName: record.workLocation?.name ?? "",
   };
 }
 
 const employeeProfileInclude = {
-  employee: {
+  manager: {
     select: {
-      firstName: true,
-      lastName: true,
+      employeeName: true,
+      employeeCode: true,
     },
   },
   company: {
@@ -150,11 +127,15 @@ const employeeProfileInclude = {
 
 export async function getEmployeeProfileOptions() {
   try {
-    const [employees, companies, departments, jobRoles, workLocations, projects] =
+    const [managers, companies, departments, jobRoles, workLocations, projects] =
       await Promise.all([
-        prisma.user.findMany({
-          orderBy: { firstName: "asc" },
-          select: { id: true, firstName: true, lastName: true },
+        prisma.employeeProfile.findMany({
+          orderBy: [{ employeeName: "asc" }, { employeeCode: "asc" }],
+          select: {
+            id: true,
+            employeeName: true,
+            employeeCode: true,
+          },
         }),
         prisma.company.findMany({
           orderBy: { companyName: "asc" },
@@ -179,21 +160,21 @@ export async function getEmployeeProfileOptions() {
       ]);
 
     return {
-      employees,
+      managers,
       companies,
       departments,
       jobRoles,
       workLocations,
-      projects
+      projects,
     };
   } catch {
     return {
-      employees: [],
+      managers: [],
       companies: [],
       departments: [],
       jobRoles: [],
       workLocations: [],
-      projects: []
+      projects: [],
     };
   }
 }
@@ -204,7 +185,6 @@ export async function getEmployeeProfileSelectOptions() {
       orderBy: [{ employeeName: "asc" }, { employeeCode: "asc" }],
       select: {
         id: true,
-        employeeId: true,
         employeeName: true,
         employeeCode: true,
         status: true,
@@ -283,11 +263,9 @@ export async function getFilteredEmployeeProfiles(
     }
 
     if (filters.email) {
-      where.employee = {
-        email: {
-          contains: filters.email,
-          mode: "insensitive",
-        },
+      where.email = {
+        contains: filters.email,
+        mode: "insensitive",
       };
     }
 
@@ -335,11 +313,8 @@ export async function getFilteredEmployeeProfiles(
       include: {
         ...employeeProfileInclude,
         projectMembers: true,
-      }
+      },
     });
-
-    console.log(records);
-
 
     return records.map(mapEmployeeProfile);
   } catch (error) {
@@ -356,8 +331,7 @@ export async function createEmployeeProfile(
     const employeeCode = await generateEmployeeCode();
 
     const hashedPassword =
-      record.employeeId &&
-        record.password &&
+      record.password &&
         record.password !== EXISTING_PASSWORD_SENTINEL
         ? await bcrypt.hash(record.password, 10)
         : null;
@@ -368,11 +342,22 @@ export async function createEmployeeProfile(
           employeeName: record.employeeName.trim(),
           employeeCode,
           email: record.email,
-          employeeId: record.employeeId || null,
-          companyId: record.companyId || null,
-          departmentId: record.departmentId || null,
-          jobRoleId: record.jobRoleId || null,
-          workLocationId: record.workLocationId || null,
+          password: hashedPassword,
+          manager: record.managerId
+            ? { connect: { id: record.managerId } }
+            : undefined,
+          company: record.companyId
+            ? { connect: { id: record.companyId } }
+            : undefined,
+          department: record.departmentId
+            ? { connect: { id: record.departmentId } }
+            : undefined,
+          jobRole: record.jobRoleId
+            ? { connect: { id: record.jobRoleId } }
+            : undefined,
+          workLocation: record.workLocationId
+            ? { connect: { id: record.workLocationId } }
+            : undefined,
 
           phone: record.phone,
           alternatePhone: record.alternatePhone || null,
@@ -388,15 +373,16 @@ export async function createEmployeeProfile(
         },
       });
 
-      if (record.employeeId && hashedPassword) {
-        await tx.user.update({
-          where: { id: record.employeeId },
+      if (hashedPassword) {
+        await tx.user.updateMany({
+          where: { email: record.email },
           data: { password: hashedPassword },
         });
       }
     });
 
     revalidatePath("/employee-profiles");
+    revalidatePath("/employee-dashboard");
 
     return {
       success: true,
@@ -444,16 +430,22 @@ export async function updateEmployeeProfile(
   try {
     const record = employeeProfileSchema.parse(data);
 
+    if (record.managerId && record.managerId === id) {
+      return {
+        success: false,
+        message: "Employee cannot be assigned as their own manager",
+      };
+    }
+
     const hashedPassword =
-      record.employeeId &&
-        record.password &&
+      record.password &&
         record.password !== EXISTING_PASSWORD_SENTINEL
         ? await bcrypt.hash(record.password, 10)
         : null;
 
     const existingRecord = await prisma.employeeProfile.findUnique({
       where: { id },
-      select: { employeeCode: true },
+      select: { employeeCode: true, email: true },
     });
 
     if (!existingRecord) {
@@ -470,11 +462,12 @@ export async function updateEmployeeProfile(
           employeeName: record.employeeName.trim(),
           employeeCode: record.employeeCode || existingRecord.employeeCode,
           email: record.email,
-          employeeId: record.employeeId || null,
-          companyId: record.companyId || null,
-          departmentId: record.departmentId || null,
-          jobRoleId: record.jobRoleId || null,
-          workLocationId: record.workLocationId || null,
+          ...(hashedPassword ? { password: hashedPassword } : {}),
+          manager: connectRelation(record.managerId),
+          company: connectRelation(record.companyId),
+          department: connectRelation(record.departmentId),
+          jobRole: connectRelation(record.jobRoleId),
+          workLocation: connectRelation(record.workLocationId),
 
           phone: record.phone,
           alternatePhone: record.alternatePhone || null,
@@ -490,16 +483,18 @@ export async function updateEmployeeProfile(
         },
       });
 
-      if (record.employeeId && hashedPassword) {
-        await tx.user.update({
-          where: { id: record.employeeId },
-          data: { password: hashedPassword },
-        });
-      }
+      await tx.user.updateMany({
+        where: { email: existingRecord.email },
+        data: {
+          email: record.email,
+          ...(hashedPassword ? { password: hashedPassword } : {}),
+        },
+      });
     });
 
     revalidatePath("/employee-profiles");
     revalidatePath(`/employee-profiles/edit/${id}`);
+    revalidatePath("/employee-dashboard");
 
     return {
       success: true,

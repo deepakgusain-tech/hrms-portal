@@ -199,14 +199,14 @@ export const employeeDocumentSchema = z
 /* ---------------- EMPLOYEE PROFILE ---------------- */
 export const employeeProfileSchema = z.object({
   id: z.string().optional(),
-  employeeId: z.union([z.string().uuid(), z.literal("")]).optional(),
+  managerId: z.union([z.string().uuid(), z.literal("")]).optional(),
   employeeName: z.string().trim().min(1, "Employee name is required"),
   employeeCode: z.string().optional(),
   email: z.string().min(1, "Email Id is required"),
   password: z.union([
     z.string().min(6, "Password should be at least 6 characters long"),
     z.literal(""),
-  ]).optional(),
+  ]),
   companyId: z.string().min(1, "Company is required"),
   phone: z.string().min(1, "Phone is required"),
   alternatePhone: z.string().optional(),

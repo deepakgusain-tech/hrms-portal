@@ -27,7 +27,7 @@ export async function getUserPermissions() {
     return null;
   }
 
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
       role: {
@@ -41,6 +41,23 @@ export async function getUserPermissions() {
       },
     },
   });
+
+  if (user) {
+    return user;
+  }
+
+  if (isEmployeeRole(session.user.role)) {
+    return {
+      id: session.user.id,
+      email: session.user.email,
+      role: {
+        name: "employee",
+        roleModules: [],
+      },
+    };
+  }
+
+  return null;
 }
 
 export function isAdminRole(roleName?: string | null) {
@@ -53,6 +70,10 @@ export function isHrRole(roleName?: string | null) {
 
 export function isEmployeeRole(roleName?: string | null) {
   return roleName?.toLowerCase() === "employee";
+}
+
+export function isEmployerRole(roleName?: string | null) {
+  return roleName?.toLowerCase() === "employer";
 }
 
 export function canManageAllAttendance(roleName?: string | null) {
@@ -197,6 +218,11 @@ export async function getAllowedRoute(route: string) {
 
 export async function getAccessibleRoutes() {
   const user = await getUserPermissions();
+  const session = await auth();
+
+  if (isEmployerRole(session?.user?.role)) {
+    return ["/dashboard"];
+  }
 
   if (!user) {
     return [];

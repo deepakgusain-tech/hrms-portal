@@ -24,7 +24,7 @@ export default async function EmployeeDashboardPage() {
   const session = await auth();
   const isEmployee = session?.user?.role?.toLowerCase() === "employee";
 
-  if (!session?.user?.id) {
+  if (!session?.user?.email) {
     redirect("/");
   }
 
@@ -47,10 +47,9 @@ export default async function EmployeeDashboardPage() {
             name: true,
           },
         },
-        employee: {
+        manager: {
           select: {
-            email: true,
-            status: true,
+            employeeName: true,
           },
         },
       },
@@ -123,9 +122,10 @@ export default async function EmployeeDashboardPage() {
                 </div>
 
                 <div className="mt-4 space-y-2 text-sm text-slate-600">
-                  <p>Email: {profile.employee?.email || "-"}</p>
+                  <p>Email: {profile.email || "-"}</p>
                   <p>Phone: {profile.phone || "-"}</p>
                   <p>Department: {profile.department?.name || "Not assigned"}</p>
+                  <p>Manager: {profile.manager?.employeeName || "Not assigned"}</p>
                   <p>Job Role: {profile.jobRole?.name || "Not assigned"}</p>
                   <p>Location: {profile.workLocation?.name || "Not assigned"}</p>
                   <p>Joining Date: {formatDate(profile.joiningDate)}</p>
@@ -140,7 +140,7 @@ export default async function EmployeeDashboardPage() {
 
   const employeeProfile = await prisma.employeeProfile.findFirst({
     where: {
-      employeeId: session.user.id,
+      email: session.user.email,
     },
     include: {
       department: {
@@ -151,6 +151,11 @@ export default async function EmployeeDashboardPage() {
       jobRole: {
         select: {
           name: true,
+        },
+      },
+      manager: {
+        select: {
+          employeeName: true,
         },
       },
       workLocation: {
@@ -347,6 +352,12 @@ export default async function EmployeeDashboardPage() {
                 <p className="text-sm text-slate-500">Department</p>
                 <p className="mt-1 font-medium text-slate-900">
                   {employeeProfile.department?.name || "Not assigned"}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4">
+                <p className="text-sm text-slate-500">Manager</p>
+                <p className="mt-1 font-medium text-slate-900">
+                  {employeeProfile.manager?.employeeName || "Not assigned"}
                 </p>
               </div>
               <div className="rounded-2xl bg-slate-50 p-4">
