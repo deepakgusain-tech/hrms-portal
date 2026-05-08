@@ -387,16 +387,13 @@ export function AppSidebar({
 
   const companyName = config?.name?.trim() || "SY ASSOCIATES";
   const logoSrc = config?.logo?.trim() || "";
-  const [showLogo, setShowLogo] = React.useState(Boolean(logoSrc));
+  const [failedLogoSrc, setFailedLogoSrc] = React.useState<string | null>(null);
+  const showLogo = Boolean(logoSrc) && failedLogoSrc !== logoSrc;
 
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
   const pathname = usePathname();
-
-  React.useEffect(() => {
-    setShowLogo(Boolean(logoSrc));
-  }, [logoSrc]);
 
   return (
     <Sidebar
@@ -420,7 +417,7 @@ export function AppSidebar({
                       width={30}
                       height={30}
                       className="rounded-lg object-cover shrink-0 border border-slate-200"
-                      onError={() => setShowLogo(false)}
+                      onError={() => setFailedLogoSrc(logoSrc)}
                     />
                   ) : (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-sm font-semibold text-cyan-700">

@@ -36,7 +36,7 @@ type SwitcherMenuItem = {
 type SwitcherMenu = {
   name: string
   icon: React.ReactNode
-  children: SwitcherMenuItem[]
+  children?: SwitcherMenuItem[]
 }
 
 export function Switcher({ menu }: { menu: SwitcherMenu }) {
@@ -47,6 +47,7 @@ export function Switcher({ menu }: { menu: SwitcherMenu }) {
   const isActive = menu.children?.some((item: SwitcherMenuItem) =>
     pathname.startsWith(item.url)
   )
+  const children = menu.children ?? []
 
   const isCollapsed = state === "collapsed"
 
@@ -100,7 +101,7 @@ export function Switcher({ menu }: { menu: SwitcherMenu }) {
                 side={isMobile ? "bottom" : "right"}
                 sideOffset={10}
               >
-                {menu.children.map((m: SwitcherMenuItem, index: number) => (
+                {children.map((m: SwitcherMenuItem, index: number) => (
                   <DropdownMenuItem
                     key={m.name}
                     className="cursor-pointer gap-2 rounded-lg p-2 text-slate-700 hover:bg-cyan-50 focus:bg-cyan-50"
