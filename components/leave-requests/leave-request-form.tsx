@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarPlus, Send } from "lucide-react";
+import { CalendarPlus, Clock3, Send } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +51,7 @@ export function LeaveRequestForm({
   const [endDate, setEndDate] = React.useState("");
   const [reason, setReason] = React.useState("");
   const [isPending, startTransition] = React.useTransition();
+  const upcomingRequest = requests[0];
 
   const submit = () => {
     startTransition(async () => {
@@ -84,19 +85,38 @@ export function LeaveRequestForm({
 
   return (
     <div className="space-y-5">
-      <Card className="border-slate-200 bg-white shadow-sm">
+      <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
         <CardHeader className="border-b border-slate-100">
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <CalendarPlus className="size-5 text-blue-600" />
-            Apply for Leave
-          </CardTitle>
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <CalendarPlus className="size-5 text-cyan-700" />
+                Apply for Leave
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500">
+                Choose leave type, set the date range, and add clear context
+                for the reviewer.
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <div className="flex items-center gap-2 font-medium text-slate-700">
+                <Clock3 className="size-4 text-cyan-700" />
+                Latest status
+              </div>
+              <p className="mt-1">
+                {upcomingRequest
+                  ? `${upcomingRequest.status} for ${formatDate(upcomingRequest.startDate)}`
+                  : "No requests submitted yet"}
+              </p>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 pt-5">
           <div className="grid gap-3 md:grid-cols-3">
             <select
               value={leaveType}
               onChange={(event) => setLeaveType(event.target.value)}
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-11 rounded-lg border border-slate-200 px-3 text-sm"
               disabled={isPending}
             >
               {leaveTypes.map((type) => (
@@ -108,14 +128,14 @@ export function LeaveRequestForm({
             <input
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-11 rounded-lg border border-slate-200 px-3 text-sm"
               type="date"
               disabled={isPending}
             />
             <input
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-11 rounded-lg border border-slate-200 px-3 text-sm"
               type="date"
               disabled={isPending}
             />
@@ -124,15 +144,15 @@ export function LeaveRequestForm({
           <Textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="Reason"
-            className="min-h-24"
+            placeholder="Add the reason, handoff context, or any details HR should know"
+            className="min-h-28 border-slate-200 bg-slate-50"
             disabled={isPending}
           />
 
           <Button
             onClick={submit}
             disabled={isPending}
-            className="h-10 bg-blue-600 px-4 hover:bg-blue-700"
+            className="h-11 bg-cyan-600 px-4 hover:bg-cyan-700"
           >
             <Send />
             Submit Request
@@ -140,15 +160,16 @@ export function LeaveRequestForm({
         </CardContent>
       </Card>
 
-      <Card className="border-slate-200 bg-white shadow-sm">
+      <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
         <CardHeader className="border-b border-slate-100">
           <CardTitle className="text-xl">My Leave Requests</CardTitle>
         </CardHeader>
         <CardContent className="pt-5">
-          <div className="max-w-full overflow-x-auto">
+          <div className="overflow-hidden rounded-lg border border-slate-200">
+            <div className="max-w-full overflow-x-auto">
             <table className="w-full min-w-[760px] text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-left text-slate-500">
+                <tr className="border-b border-slate-100 bg-slate-50 text-left text-slate-600">
                   <th className="px-3 py-3">Type</th>
                   <th className="px-3 py-3">Dates</th>
                   <th className="px-3 py-3">Days</th>
@@ -158,8 +179,13 @@ export function LeaveRequestForm({
                 </tr>
               </thead>
               <tbody>
-                {requests.map((request) => (
-                  <tr key={request.id} className="border-b border-slate-100">
+                {requests.map((request, index) => (
+                  <tr
+                    key={request.id}
+                    className={`border-b border-slate-100 ${
+                      index % 2 === 0 ? "bg-white" : "bg-slate-50/60"
+                    }`}
+                  >
                     <td className="px-3 py-3">
                       {request.leaveType.replace("_", " ")}
                     </td>
@@ -193,6 +219,7 @@ export function LeaveRequestForm({
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </CardContent>
       </Card>

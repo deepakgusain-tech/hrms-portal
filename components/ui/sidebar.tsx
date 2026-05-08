@@ -243,7 +243,7 @@ function Sidebar({
         <div
           data-sidebar="sidebar"
           data-slot="sidebar-inner"
-          className="flex size-full flex-col bg-gradient-to-b from-indigo-950 via-indigo-900 to-indigo-800 text-white group-data-[variant=floating]:rounded-2xl group-data-[variant=floating]:shadow-2xl group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-white/10"
+          className="flex size-full flex-col bg-sidebar text-sidebar-foreground group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:shadow-2xl group-data-[variant=floating]:ring-1 group-data-[variant=floating]:ring-sidebar-border"
 
         >
           {children}
@@ -469,13 +469,13 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-2xl p-2 text-left text-sm text-white ring-0 outline-hidden transition-all duration-200 group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-white/40 active:bg-white/15 disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-white/10 data-open:hover:text-white data-active:bg-white data-active:font-semibold data-active:text-indigo-700 data-active:shadow-lg [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
+  "peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-lg p-2 text-left text-sm text-sidebar-foreground ring-0 outline-hidden transition-all duration-200 group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-active:bg-sidebar-accent data-active:font-semibold data-active:text-sidebar-accent-foreground data-active:shadow-sm [&_svg]:size-4 [&_svg]:shrink-0 [&>span:last-child]:truncate",
   {
     variants: {
       variant: {
         default: "",
         outline:
-          "border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30",
+          "border border-sidebar-border bg-sidebar-accent/50 hover:border-sidebar-ring",
       },
       size: {
         default: "h-10 text-sm",

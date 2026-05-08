@@ -27,12 +27,24 @@ import {
 import { ChevronRight } from "lucide-react"
 import { useRouter, usePathname } from "next/navigation"
 
-export function Switcher({ menu }: any) {
+type SwitcherMenuItem = {
+  name: string
+  url: string
+  icon: React.ReactNode
+}
+
+type SwitcherMenu = {
+  name: string
+  icon: React.ReactNode
+  children: SwitcherMenuItem[]
+}
+
+export function Switcher({ menu }: { menu: SwitcherMenu }) {
   const router = useRouter()
   const pathname = usePathname()
   const { isMobile, state } = useSidebar()
 
-  const isActive = menu.children?.some((item: any) =>
+  const isActive = menu.children?.some((item: SwitcherMenuItem) =>
     pathname.startsWith(item.url)
   )
 
@@ -49,19 +61,19 @@ export function Switcher({ menu }: any) {
                   <SidebarMenuButton
                     size="lg"
                     className={`
-                rounded-2xl cursor-pointer transition-all duration-200
+                rounded-lg cursor-pointer transition-all duration-200
                 ${isActive
-                        ? "bg-indigo-800 text-white shadow-lg ring-1 ring-white/20"
-                        : "text-white hover:bg-white/15 hover:text-white"
+                        ? "bg-cyan-600 text-white shadow-sm"
+                        : "text-slate-700 hover:bg-white hover:text-slate-900"
                       }
               `}
                   >
                     <div
                       className={`
-                  flex aspect-square size-8 items-center justify-center rounded-xl
+                  flex aspect-square size-8 items-center justify-center rounded-lg
                   ${isActive
                           ? "bg-white/20 text-white"
-                          : "border border-white/30 bg-white/20 text-white"
+                          : "border border-slate-200 bg-slate-50 text-cyan-700"
                         }
                 `}
                     >
@@ -83,18 +95,18 @@ export function Switcher({ menu }: any) {
               )}
 
               <DropdownMenuContent
-                className="min-w-56 rounded-2xl border border-white/20 bg-white shadow-xl"
+                className="min-w-56 rounded-lg border border-slate-200 bg-white shadow-xl"
                 align="start"
                 side={isMobile ? "bottom" : "right"}
                 sideOffset={10}
               >
-                {menu.children.map((m: any, index: number) => (
+                {menu.children.map((m: SwitcherMenuItem, index: number) => (
                   <DropdownMenuItem
                     key={m.name}
-                    className="gap-2 rounded-xl p-2 cursor-pointer text-slate-700 hover:bg-indigo-50 focus:bg-indigo-50"
+                    className="cursor-pointer gap-2 rounded-lg p-2 text-slate-700 hover:bg-cyan-50 focus:bg-cyan-50"
                     onSelect={() => router.push(m.url)}
                   >
-                    <div className="flex size-7 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
+                    <div className="flex size-7 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700">
                       {m.icon}
                     </div>
 

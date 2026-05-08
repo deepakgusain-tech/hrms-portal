@@ -387,40 +387,48 @@ export function AppSidebar({
 
   const companyName = config?.name?.trim() || "SY ASSOCIATES";
   const logoSrc = config?.logo?.trim() || "";
+  const [showLogo, setShowLogo] = React.useState(Boolean(logoSrc));
 
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
   const pathname = usePathname();
 
+  React.useEffect(() => {
+    setShowLogo(Boolean(logoSrc));
+  }, [logoSrc]);
+
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r z-100 border-indigo-200/40 bg-gradient-to-b from-indigo-400 via-blue-400 to-cyan-300 text-white shadow-xl"
+      className="z-100 border-r border-slate-200 shadow-sm"
       {...props}
     >
-      <SidebarHeader className="border-b border-white/20 px-3 py-3">
+      <SidebarHeader className="border-b border-slate-200 px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="h-auto rounded-2xl p-2 hover:bg-white/15 transition-all duration-200"
+              className="h-auto rounded-lg p-2 transition-all duration-200 hover:bg-white"
             >
               <Link href={homeHref}>
                 <div className="flex items-center gap-3 min-w-0">
-                  {logoSrc ? (
+                  {showLogo && logoSrc ? (
                     <Image
                       src={logoSrc}
                       alt="Company Logo"
                       width={30}
                       height={30}
-                      className="rounded-xl object-cover shrink-0 border border-white/30"
+                      className="rounded-lg object-cover shrink-0 border border-slate-200"
+                      onError={() => setShowLogo(false)}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-xl bg-white/25 shrink-0" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-sm font-semibold text-cyan-700">
+                      {companyName.charAt(0).toUpperCase()}
+                    </div>
                   )}
 
-                  <span className="text-sm font-semibold tracking-wide truncate text-white group-data-[collapsible=icon]:hidden">
+                  <span className="truncate text-sm font-semibold tracking-wide text-slate-900 group-data-[collapsible=icon]:hidden">
                     {companyName}
                   </span>
                 </div>
@@ -444,20 +452,20 @@ export function AppSidebar({
                         asChild
                         size="lg"
                         className={`
-                        rounded-2xl cursor-pointer transition-all duration-200
+                        rounded-lg cursor-pointer transition-all duration-200
                         ${pathname === group.url
-                            ? "bg-indigo-800 text-white shadow-lg ring-1 ring-white/20"
-                            : "text-white hover:bg-white/15 hover:text-white"
+                            ? "bg-cyan-600 text-white shadow-sm"
+                            : "text-slate-700 hover:bg-white hover:text-slate-900"
                           }
                       `}
                       >
                         <Link href={group.url!}>
                           <div
                             className={`
-                              flex aspect-square size-8 items-center justify-center rounded-xl
+                              flex aspect-square size-8 items-center justify-center rounded-lg
                               ${pathname === group.url
                                 ? "bg-white/20 text-white"
-                                : "border border-white/30 bg-white/20 text-white"
+                                : "border border-slate-200 bg-slate-50 text-cyan-700"
                               }
                             `}
                           >
@@ -468,7 +476,7 @@ export function AppSidebar({
                       </SidebarMenuButton>
                     </TooltipTrigger>
                     {isCollapsed && (
-                      <TooltipContent side="right" className="bg-slate-900 text-white border-0">
+                      <TooltipContent side="right" className="border-0 bg-slate-900 text-white">
                         {group.name}
                       </TooltipContent>
                     )}
@@ -480,8 +488,8 @@ export function AppSidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-white/20 p-2">
-        <div className="rounded-2xl bg-white/25 backdrop-blur-md ring-1 ring-white/20">
+      <SidebarFooter className="border-t border-slate-200 p-2">
+        <div className="rounded-lg bg-white ring-1 ring-slate-200">
           <NavUser user={navUser} />
         </div>
       </SidebarFooter>

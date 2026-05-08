@@ -90,15 +90,13 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  const shouldScroll = columns.length > 9
-
   return (
-    <Card className="min-w-0 rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
+    <Card className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
       <CardHeader className="border-b border-slate-100 pb-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="text-2xl font-bold text-slate-800">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-2xl font-bold text-slate-900">
               {title}
             </CardTitle>
             <p className="mt-1 text-sm text-slate-500">
@@ -106,7 +104,7 @@ export function DataTable<TData, TValue>({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
             {actions}
           </div>
         </div>
@@ -115,12 +113,12 @@ export function DataTable<TData, TValue>({
       {/* Content */}
       <CardContent className="min-w-0 space-y-5 pt-6">
         {/* Search */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Input
             placeholder="Search records..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-11 max-w-sm rounded-2xl border-slate-200 bg-slate-50 px-4 focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="h-11 w-full max-w-sm rounded-2xl border-slate-200 bg-slate-50 px-4 focus-visible:ring-2 focus-visible:ring-indigo-500"
           />
 
           <div className="text-sm text-slate-500">
@@ -129,10 +127,10 @@ export function DataTable<TData, TValue>({
         </div>
 
         {/* Table */}
-        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className={shouldScroll ? "max-w-full overflow-x-auto" : "overflow-hidden"}>
-            <Table className={shouldScroll ? "min-w-[1200px]" : "w-full"}>
-              <TableHeader className="bg-gradient-to-r from-indigo-600 to-cyan-500">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="max-w-full overflow-x-auto">
+            <Table className="w-full">
+              <TableHeader className="bg-gradient-to-r from-cyan-600 to-sky-500">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
                     key={headerGroup.id}

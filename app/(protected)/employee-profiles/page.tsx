@@ -35,7 +35,7 @@ const EmployeeProfilePage = async () => {
       title="Employee Profiles"
       actions={
         permissions.canCreate && (
-          <Button className="bg-blue-500 hover:bg-blue-600">
+          <Button asChild className="bg-blue-500 hover:bg-blue-600">
             <Link href="/employee-profiles/create">Add Employee Profile</Link>
           </Button>
         )
