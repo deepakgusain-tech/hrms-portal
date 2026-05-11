@@ -5,6 +5,7 @@ import {
   ColumnDef,
   Row,
   SortingState,
+  VisibilityState,
   PaginationState,
   flexRender,
   getCoreRowModel,
@@ -13,6 +14,7 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import { ArrowDown, ArrowUp, ChevronsUpDown, SlidersHorizontal } from "lucide-react"
 
 import {
   Table,
@@ -25,6 +27,13 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import {
   Card,
@@ -49,6 +58,8 @@ export function DataTable<TData, TValue>({
   rowClassName,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [currentData, setCurrentData] = React.useState<TData[]>(data)
 
@@ -77,10 +88,12 @@ export function DataTable<TData, TValue>({
     columns,
     state: {
       sorting,
+      columnVisibility,
       globalFilter,
       pagination,
     },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
     globalFilterFn,
@@ -89,6 +102,10 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   })
+
+  const columnOptions = table
+    .getAllLeafColumns()
+    .filter((column) => column.getCanHide())
 
   return (
     <Card className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -121,8 +138,41 @@ export function DataTable<TData, TValue>({
             className="h-11 w-full max-w-sm rounded-2xl border-slate-200 bg-slate-50 px-4 focus-visible:ring-2 focus-visible:ring-indigo-500"
           />
 
-          <div className="text-sm text-slate-500">
-            Total: {table.getFilteredRowModel().rows.length}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-sm text-slate-500">
+              Total: {table.getFilteredRowModel().rows.length}
+            </div>
+
+            {columnOptions.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-9 rounded-xl border-slate-200 bg-white text-slate-600"
+                  >
+                    <SlidersHorizontal />
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>Filter columns</DropdownMenuLabel>
+                  {columnOptions.map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                      className="capitalize"
+                    >
+                      {typeof column.columnDef.header === "string"
+                        ? column.columnDef.header
+                        : column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
@@ -148,13 +198,12 @@ export function DataTable<TData, TValue>({
                             header.getContext()
                           )}
 
-                          {{
-                            asc: "▲",
-                            desc: "▼",
-                          }[
-                            header.column.getIsSorted() as string
-                          ] ?? (
-                            <span className="text-white/50">↕</span>
+                          {header.column.getIsSorted() === "asc" ? (
+                            <ArrowUp className="size-4 text-white/80" />
+                          ) : header.column.getIsSorted() === "desc" ? (
+                            <ArrowDown className="size-4 text-white/80" />
+                          ) : (
+                            <ChevronsUpDown className="size-4 text-white/50" />
                           )}
                         </div>
                       </TableHead>
@@ -192,7 +241,7 @@ export function DataTable<TData, TValue>({
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length}
+                      colSpan={Math.max(table.getVisibleLeafColumns().length, 1)}
                       className="h-28 text-center text-slate-500"
                     >
                       No results found.

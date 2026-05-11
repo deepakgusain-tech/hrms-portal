@@ -5,7 +5,6 @@ import { ColumnDef } from "@tanstack/react-table";
 import { EmployeeProfile } from "@/types";
 import { DataTable } from "@/components/datatable/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 
 interface EmployeeListProps {
@@ -26,15 +25,31 @@ const getStatusBadge = (status?: string) => {
   return statusMap[normalized ?? ""] ?? "bg-blue-100 text-blue-800";
 };
 
-const columns: ColumnDef<EmployeeProfile, any>[] = [
+const columns: ColumnDef<EmployeeProfile>[] = [
+  {
+    accessorKey: "employeeName",
+    header: "Employee",
+  },
   {
     accessorKey: "employeeCode",
     header: "Employee ID",
-    cell: ({ getValue }) =>  <Link href={`/employee-profiles/${getValue()}`} className="hover:underline hover:decoration-blue-500">{getValue()}</Link>,
+    cell: ({ getValue }) => {
+      const employeeCode = String(getValue() || "");
+
+      return (
+        <Link
+          href={`/employee-profiles/${employeeCode}`}
+          className="hover:underline hover:decoration-blue-500"
+        >
+          {employeeCode}
+        </Link>
+      );
+    },
   },
   {
-    accessorKey: "employeeName",
-    header: "Name",
+    accessorKey: "phone",
+    header: "Phone",
+    cell: ({ getValue }) => String(getValue() || "-"),
   },
   {
     accessorKey: "departmentName",
@@ -47,23 +62,66 @@ const columns: ColumnDef<EmployeeProfile, any>[] = [
     cell: ({ getValue }) => getValue() || "-",
   },
   {
-    accessorKey: "workLocationName",
-    header: "Location",
+    accessorKey: "companyName",
+    header: "Company Name",
     cell: ({ getValue }) => getValue() || "-",
   },
   {
-    accessorKey: "companyName",
-    header: "Company",
+    accessorKey: "managerName",
+    header: "Manager",
     cell: ({ getValue }) => getValue() || "-",
+  },
+  {
+    accessorKey: "workLocationName",
+    header: "Work Location",
+    cell: ({ getValue }) => getValue() || "-",
+  },
+  {
+    accessorKey: "joiningDate",
+    header: "Joining Date",
+    cell: ({ getValue }) => {
+      const value = getValue();
+
+      return value ? new Date(String(value)).toLocaleDateString("en-GB") : "-";
+    },
+  },
+  {
+    accessorKey: "projectNames",
+    header: "Projects",
+    cell: ({ row }) => {
+      const projectNames = row.original.projectNames ?? [];
+
+      if (!projectNames.length) {
+        return "-";
+      }
+
+      return (
+        <div className="flex max-w-64 flex-wrap gap-1">
+          {projectNames.map((projectName) => (
+            <Badge
+              key={projectName}
+              variant="secondary"
+              className="bg-sky-50 text-sky-700"
+            >
+              {projectName}
+            </Badge>
+          ))}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "status",
     header: "Status",
-    cell: ({ getValue }) => (
-      <Badge className={getStatusBadge(getValue() as string)}>
-        {getValue()}
-      </Badge>
-    ),
+    cell: ({ getValue }) => {
+      const status = String(getValue() || "");
+
+      return (
+        <Badge className={getStatusBadge(status)}>
+          {status}
+        </Badge>
+      );
+    },
   },
 ];
 

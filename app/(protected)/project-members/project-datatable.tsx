@@ -4,12 +4,11 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/datatable/DataTable";
-import { ProjectMember } from "@/types";
-import { deleteProjectMember } from "@/lib/actions/project-members";
-import { getProjectMemberColumns } from "./column";
+import { deleteProjectMembersByProject } from "@/lib/actions/project-members";
+import { getProjectMemberColumns, ProjectMemberRow } from "./column";
 
 type ProjectMemberDataTableProps = {
-  data: any;
+  data: ProjectMemberRow[];
   canEdit: boolean;
   canDelete: boolean;
   title: string;
@@ -23,10 +22,10 @@ export default function ProjectDataTable({
   title,
   actions,
 }: ProjectMemberDataTableProps) {
-  const [tableData, setTableData] = React.useState<ProjectMember[]>(data);
+  const [tableData, setTableData] = React.useState<ProjectMemberRow[]>(data);
 
   const deleteHandler = async (id: string) => {
-    const res = await deleteProjectMember(id);
+    const res = await deleteProjectMembersByProject(id);
 
     if (!res?.success) {
       toast.error("Error", { description: res?.message });

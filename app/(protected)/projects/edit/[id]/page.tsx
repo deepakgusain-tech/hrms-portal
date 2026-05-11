@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/card";
 import { getProjectById } from "@/lib/actions/projects";
 import ProjectForm from "@/components/project/project-form";
-import { getUsers } from "@/lib/actions/users";
-import { User } from "@/types";
+import { getEmployeeProfileSelectOptions } from "@/lib/actions/employee-profiles";
 
 const ProjectEditPage = async ({
   params,
@@ -39,7 +38,7 @@ const ProjectEditPage = async ({
     notFound();
   }
 
-  const users = await getUsers();
+  const employees = await getEmployeeProfileSelectOptions();
 
   const formData = {
     id: res.data.id,
@@ -86,7 +85,7 @@ const ProjectEditPage = async ({
         <ProjectForm
           data={formData}
           update={true}
-          users={users as User[]}
+          employees={employees}
         />
       </CardContent>
     </Card>

@@ -56,6 +56,7 @@ export type EmployeeProfile = z.infer<typeof employeeProfileSchema> & {
   jobRoleName?: string;
   managerName?: string;
   workLocationName?: string;
+  projectNames?: string[];
 };
 
 export type Project = z.infer<typeof projectSchema>

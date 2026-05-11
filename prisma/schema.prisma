@@ -78,7 +78,6 @@ model User {
   roleId              String    @db.Uuid
   role                Role      @relation(fields: [roleId], references: [id])
 
-  projects              Project[]
   reviewedLeaveRequests LeaveRequest[]
   reviewedEmployeeDocuments EmployeeDocument[]
 
@@ -260,9 +259,11 @@ model EmployeeProfile {
 
   employeeDocuments  EmployeeDocument[]
   transferPromotions TransferPromotion[]
+  createdProjects    Project[]
   projectMembers     ProjectMember[]
   tasks              Task[]
   taskComments       TaskComment[]
+  taskSubmissions    TaskSubmission[]
   attendances        Attendance[]
   leaveRequests      LeaveRequest[]
 
@@ -324,7 +325,7 @@ model Project {
 
   createdById String @db.Uuid
 
-  createdBy User @relation(fields: [createdById], references: [id])
+  createdBy EmployeeProfile @relation(fields: [createdById], references: [id])
 
   members ProjectMember[]
   tasks   Task[]
@@ -367,7 +368,8 @@ model Task {
 
   assignedTo EmployeeProfile? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 
-  comments TaskComment[]
+  comments    TaskComment[]
+  submissions TaskSubmission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -388,6 +390,28 @@ model TaskComment {
   employee EmployeeProfile @relation(fields: [employeeId], references: [id])
 
   createdAt DateTime @default(now())
+
+  @@index([taskId])
+  @@index([employeeId])
+}
+
+model TaskSubmission {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId     String @db.Uuid
+  employeeId String @db.Uuid
+
+  workDate    DateTime @db.Date
+  summary     String
+  reviewStatus String @default("PENDING")
+  reviewerTag  String
+  reviewRemark String?
+  reviewedAt   DateTime?
+
+  task     Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  employee EmployeeProfile @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([taskId])
   @@index([employeeId])

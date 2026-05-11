@@ -76,6 +76,7 @@ export const getEmployeeProfileColumns = ({
     columns.push({
       id: "actions",
       header: "Action",
+      enableHiding: false,
       cell: ({ row }) => {
         const id = row.original.id as string;
 

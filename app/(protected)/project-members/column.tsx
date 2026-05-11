@@ -1,8 +1,6 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Project } from "@/types";
 import { ColumnDef } from "@tanstack/react-table";
-import { EditIcon, Trash } from "lucide-react";
+import { EditIcon, Eye, Trash } from "lucide-react";
 import Link from "next/link";
 
 type ProjectMemberColumnOptions = {
@@ -11,27 +9,61 @@ type ProjectMemberColumnOptions = {
   onDelete: (id: string) => void;
 };
 
+export type ProjectMemberRow = {
+  id: string;
+  projectId: string;
+  projectName: string;
+  employees: Array<{
+    id: string;
+    name: string;
+    code?: string | null;
+  }>;
+  assignedAt?: Date | string | null;
+};
+
 export const getProjectMemberColumns = ({
   canEdit,
   canDelete,
   onDelete,
-}: ProjectMemberColumnOptions): ColumnDef<any>[] => {
-  const columns: ColumnDef<any>[] = [
+}: ProjectMemberColumnOptions): ColumnDef<ProjectMemberRow>[] => {
+  const columns: ColumnDef<ProjectMemberRow>[] = [
     {
-      accessorKey: "projectId",
+      accessorKey: "projectName",
       header: "Project",
-        cell: ({ row }) => row.original.project.name ?? "-",
     },
     {
-      accessorKey: "employeeId",
-      header: "Employee",
-      cell: ({ row }) => row.original.employee.employeeName ?? "-",
+      id: "memberCount",
+      header: "Total Employees",
+      cell: ({ row }) => row.original.employees.length,
     },
     {
       accessorKey: "assignedAt",
-      header: "Assigned At",
-      cell: ({ row }) => row.original.assignedAt ? new Date(row.original.assignedAt).toLocaleDateString() : "-",
-    }
+      header: "First Assigned",
+      cell: ({ row }) =>
+        row.original.assignedAt
+          ? new Date(row.original.assignedAt).toLocaleDateString()
+          : "-",
+    },
+    {
+      id: "employees",
+      header: "Involved Employees",
+      cell: ({ row }) => {
+        const employees = row.original.employees;
+
+        if (!employees.length) {
+          return "-";
+        }
+
+        return (
+          <Button asChild size="sm" variant="outline" className="rounded-xl">
+            <Link href={`/project-members/${row.original.projectId}`}>
+              <Eye className="h-4 w-4" />
+              View
+            </Link>
+          </Button>
+        );
+      },
+    },
   ];
 
   if (canEdit || canDelete) {
@@ -39,7 +71,8 @@ export const getProjectMemberColumns = ({
       id: "actions",
       header: "Action",
       cell: ({ row }) => {
-        const id = row.original.id as string;
+        const editId = row.original.id;
+        const projectId = row.original.projectId;
 
         return (
           <div className="flex gap-2">
@@ -49,7 +82,7 @@ export const getProjectMemberColumns = ({
                 size="icon"
                 className="bg-orange-500 hover:bg-orange-600"
               >
-                <Link href={`/project-members/edit/${id}`}>
+                <Link href={`/project-members/edit/${editId}`}>
                   <EditIcon size={16} />
                 </Link>
               </Button>
@@ -59,7 +92,7 @@ export const getProjectMemberColumns = ({
               <Button
                 size="icon"
                 variant="destructive"
-                onClick={() => onDelete(id)}
+                onClick={() => onDelete(projectId)}
               >
                 <Trash size={16} />
               </Button>

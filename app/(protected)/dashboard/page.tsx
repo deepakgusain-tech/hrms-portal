@@ -350,7 +350,22 @@ export default async function DashboardPage() {
     prisma.user.count(),
     prisma.role.findMany({ orderBy: { name: "asc" } }),
     prisma.module.findMany({ orderBy: { name: "asc" } }),
-    prisma.project.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.project.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: {
+            members: true,
+            tasks: true,
+          },
+        },
+        tasks: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    }),
     prisma.projectMember.count(),
     prisma.task.groupBy({ by: ["status"], _count: { _all: true } }),
     prisma.leaveRequest.findMany({
@@ -380,6 +395,12 @@ export default async function DashboardPage() {
   const activeProjects = projects.filter((project) => project.status === "ACTIVE");
   const pendingLeaves = leaveRequests.filter((request) => request.status === "PENDING");
   const pendingDocs = documents.filter((document) => document.reviewStatus === "PENDING");
+  const todoTasks =
+    tasksByStatus.find((item) => item.status === "TODO")?._count._all ?? 0;
+  const inProgressTasks =
+    tasksByStatus.find((item) => item.status === "IN_PROGRESS")?._count._all ?? 0;
+  const blockedTasks =
+    tasksByStatus.find((item) => item.status === "BLOCKED")?._count._all ?? 0;
   const completedTasks =
     tasksByStatus.find((item) => item.status === "DONE")?._count._all ?? 0;
   const totalTasks = tasksByStatus.reduce((total, item) => total + item._count._all, 0);
@@ -567,7 +588,34 @@ export default async function DashboardPage() {
 
           <SectionCard title="Recent Projects" description="Project records and their current status." action={{ label: "Open projects", href: "/projects" }}>
             <div className="space-y-3">
-              {projects.map((project) => (
+              <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-4">
+                <div>
+                  <p className="text-xs font-medium uppercase text-slate-500">Todo</p>
+                  <p className="mt-1 text-xl font-semibold text-slate-950">{todoTasks}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-slate-500">Progress</p>
+                  <p className="mt-1 text-xl font-semibold text-sky-700">{inProgressTasks}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-slate-500">Done</p>
+                  <p className="mt-1 text-xl font-semibold text-emerald-700">{completedTasks}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium uppercase text-slate-500">Blocked</p>
+                  <p className="mt-1 text-xl font-semibold text-rose-700">{blockedTasks}</p>
+                </div>
+              </div>
+
+              {projects.slice(0, 5).map((project) => {
+                const projectDone = project.tasks.filter(
+                  (task) => task.status === "DONE",
+                ).length;
+                const completion = project._count.tasks
+                  ? Math.round((projectDone / project._count.tasks) * 100)
+                  : 0;
+
+                return (
                 <div key={project.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium text-slate-950">{project.name}</p>
@@ -575,11 +623,23 @@ export default async function DashboardPage() {
                       {project.status.replaceAll("_", " ")}
                     </span>
                   </div>
-                  <p className="mt-2 text-sm text-slate-600">
+                  <div className="mt-3 grid gap-2 text-sm text-slate-600 sm:grid-cols-3">
+                    <span>{project._count.members} member(s)</span>
+                    <span>{project._count.tasks} task(s)</span>
+                    <span>{completion}% complete</span>
+                  </div>
+                  <div className="mt-3 h-2 rounded-full bg-white">
+                    <div
+                      className="h-2 rounded-full bg-cyan-600"
+                      style={{ width: `${completion}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 text-sm text-slate-500">
                     {formatDate(project.startDate)} - {formatDate(project.endDate)}
                   </p>
                 </div>
-              ))}
+                );
+              })}
               {!projects.length ? <EmptyState>No projects have been created yet.</EmptyState> : null}
             </div>
           </SectionCard>

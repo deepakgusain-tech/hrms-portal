@@ -10,9 +10,11 @@ import {
   Building2,
   CalendarCheck,
   CalendarPlus,
+  Search,
   FolderArchive,
   Gauge,
   IdCard,
+  ListChecks,
   LayoutGrid,
   Settings,
   User2Icon,
@@ -74,6 +76,11 @@ const menu: MenuGroup[] = [
     icon: <Gauge size={18} />,
     children: [
       { name: "Overview", url: "/dashboard", icon: <Gauge size={18} /> },
+      {
+        name: "Employee Search",
+        url: "/dashboard-design",
+        icon: <Search size={18} />,
+      },
       {
         name: "Employee Dashboard",
         url: "/employee-dashboard",
@@ -159,6 +166,11 @@ const menu: MenuGroup[] = [
         icon: <UserCog size={18} />,
       },
       {
+        name: "Project Tracking",
+        url: "/project-tracking",
+        icon: <FolderArchive size={18} />,
+      },
+      {
         name: "Task Creation",
         url: "/tasks",
         icon: <UserCog size={18} />,
@@ -224,6 +236,11 @@ function getMenuByRole(
           icon: <CalendarPlus size={18} />,
         },
         {
+          name: "Task Tracking",
+          url: "/employee-task-tracking",
+          icon: <ListChecks size={18} />,
+        },
+        {
           name: "Transfer & Promotion",
           url: "/transfer-promotion",
           icon: <ArrowRightLeft size={18} />,
@@ -259,6 +276,11 @@ function getMenuByRole(
           icon: <IdCard size={18} />,
         },
         {
+          name: "My Task Tracking",
+          url: "/employee-task-tracking",
+          icon: <ListChecks size={18} />,
+        },
+        {
           name: "Project Management",
           icon: <FolderArchive size={18} />,
           children: [
@@ -271,6 +293,11 @@ function getMenuByRole(
               name: "Project Members",
               url: "/project-members",
               icon: <UserCog size={18} />,
+            },
+            {
+              name: "Project Tracking",
+              url: "/project-tracking",
+              icon: <FolderArchive size={18} />,
             },
           ],
         },
@@ -298,6 +325,11 @@ function getMenuByRole(
         url: "/employee-documents",
         icon: <IdCard size={18} />,
       },
+      {
+        name: "My Task Tracking",
+        url: "/employee-task-tracking",
+        icon: <ListChecks size={18} />,
+      },
     ];
   }
 
@@ -311,6 +343,11 @@ function getMenuByRole(
             name: "Employer Dashboard",
             url: "/dashboard",
             icon: <Gauge size={18} />,
+          },
+          {
+            name: "Employee Search",
+            url: "/dashboard-design",
+            icon: <Search size={18} />,
           },
         ],
       },

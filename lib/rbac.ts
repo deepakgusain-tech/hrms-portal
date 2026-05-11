@@ -86,7 +86,12 @@ function isLeaveRequestRoute(route: string) {
 }
 
 function isProjectManagementRoute(route: string) {
-  return route === "/projects" || route === "/project-members";
+  return (
+    route === "/projects" ||
+    route === "/project-members" ||
+    route === "/project-tracking" ||
+    route === "/employee-task-tracking"
+  );
 }
 
 function isAdminUser(user: UserWithPermissions | null) {
@@ -140,6 +145,7 @@ export async function canAccess(route: string, action: PermissionAction) {
   if (
     isEmployeeUser(user) &&
     (route === "/employee-documents" ||
+      route === "/employee-task-tracking" ||
       route === "/attendance" ||
       route === "/attendance/my" ||
       isLeaveRequestRoute(route))
@@ -192,6 +198,7 @@ export async function getRoutePermissions(route: string) {
   if (
     isEmployeeUser(user) &&
     (route === "/employee-documents" ||
+      route === "/employee-task-tracking" ||
       route === "/attendance" ||
       route === "/attendance/my" ||
       isLeaveRequestRoute(route))
@@ -247,7 +254,7 @@ export async function getAccessibleRoutes() {
   const session = await auth();
 
   if (isEmployerRole(session?.user?.role)) {
-    return ["/dashboard"];
+    return ["/dashboard", "/dashboard-design"];
   }
 
   if (!user) {
@@ -259,6 +266,8 @@ export async function getAccessibleRoutes() {
       user.role?.roleModules.map((roleModule) => roleModule.module.route) || []
     );
     routes.add("/leave-requests");
+    routes.add("/dashboard-design");
+    routes.add("/project-tracking");
     return Array.from(routes);
   }
 
@@ -277,12 +286,14 @@ export async function getAccessibleRoutes() {
     );
 
     routes.add("/employee-documents");
+    routes.add("/employee-task-tracking");
     routes.add("/attendance/my");
     routes.add("/leave-requests/my");
 
     if (await isCurrentEmployeeManager()) {
       routes.add("/projects");
       routes.add("/project-members");
+      routes.add("/project-tracking");
     }
 
     return Array.from(routes);
@@ -303,11 +314,13 @@ export async function getAccessibleRoutes() {
     );
 
     routes.add("/leave-requests");
+    routes.add("/dashboard-design");
+    routes.add("/project-tracking");
 
     return Array.from(routes);
   }
 
-  return (
+  const routes = new Set(
     user.role?.roleModules
       .filter((roleModule) => {
         return (
@@ -319,4 +332,9 @@ export async function getAccessibleRoutes() {
       })
       .map((roleModule) => roleModule.module.route) || []
   );
+
+  routes.add("/dashboard-design");
+  routes.add("/project-tracking");
+
+  return Array.from(routes);
 }
