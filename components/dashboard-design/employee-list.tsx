@@ -12,6 +12,9 @@ interface EmployeeListProps {
   isLoading?: boolean;
 }
 
+const formatDate = (value?: string) =>
+  value ? new Date(value).toLocaleDateString("en-GB") : "-";
+
 const getStatusBadge = (status?: string) => {
   const normalized = status?.toUpperCase();
 
@@ -27,63 +30,82 @@ const getStatusBadge = (status?: string) => {
 
 const columns: ColumnDef<EmployeeProfile>[] = [
   {
-    accessorKey: "employeeName",
+    id: "employee",
+    accessorFn: (row) => `${row.employeeName} ${row.employeeCode}`,
     header: "Employee",
-  },
-  {
-    accessorKey: "employeeCode",
-    header: "Employee ID",
-    cell: ({ getValue }) => {
-      const employeeCode = String(getValue() || "");
-
+    cell: ({ row }) => {
+      const employeeCode = row.original.employeeCode || "";
       return (
-        <Link
-          href={`/employee-profiles/${employeeCode}`}
-          className="hover:underline hover:decoration-blue-500"
-        >
-          {employeeCode}
-        </Link>
+        <div className="min-w-[210px]">
+          <p className="font-semibold text-slate-900">{row.original.employeeName}</p>
+          <Link
+            href={`/employee-profiles/${employeeCode}`}
+            className="text-xs font-medium uppercase tracking-wide text-sky-700 hover:underline"
+          >
+            {employeeCode}
+          </Link>
+        </div>
       );
     },
   },
   {
-    accessorKey: "phone",
-    header: "Phone",
-    cell: ({ getValue }) => String(getValue() || "-"),
+    id: "contact",
+    accessorFn: (row) => `${row.phone} ${row.email ?? ""}`,
+    header: "Contact",
+    cell: ({ row }) => (
+      <div className="min-w-[180px]">
+        <p className="font-medium text-slate-800">{row.original.phone || "-"}</p>
+        <p className="text-xs text-slate-500">{row.original.email || "No email"}</p>
+      </div>
+    ),
   },
   {
-    accessorKey: "departmentName",
-    header: "Department",
-    cell: ({ getValue }) => getValue() || "-",
+    id: "organization",
+    accessorFn: (row) =>
+      `${row.departmentName ?? ""} ${row.jobRoleName ?? ""}`,
+    header: "Organization",
+    cell: ({ row }) => (
+      <div className="min-w-[180px]">
+        <p className="font-medium text-slate-800">
+          {row.original.departmentName || "-"}
+        </p>
+        <p className="text-xs text-slate-500">
+          {row.original.jobRoleName || "No job role"}
+        </p>
+      </div>
+    ),
   },
   {
-    accessorKey: "jobRoleName",
-    header: "Job Role",
-    cell: ({ getValue }) => getValue() || "-",
+    id: "workplace",
+    accessorFn: (row) =>
+      `${row.companyName ?? ""} ${row.workLocationName ?? ""}`,
+    header: "Company / Location",
+    cell: ({ row }) => (
+      <div className="min-w-[200px]">
+        <p className="font-medium text-slate-800">
+          {row.original.companyName || "-"}
+        </p>
+        <p className="text-xs text-slate-500">
+          {row.original.workLocationName || "No work location"}
+        </p>
+      </div>
+    ),
   },
   {
-    accessorKey: "companyName",
-    header: "Company Name",
-    cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "managerName",
-    header: "Manager",
-    cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "workLocationName",
-    header: "Work Location",
-    cell: ({ getValue }) => getValue() || "-",
-  },
-  {
-    accessorKey: "joiningDate",
-    header: "Joining Date",
-    cell: ({ getValue }) => {
-      const value = getValue();
-
-      return value ? new Date(String(value)).toLocaleDateString("en-GB") : "-";
-    },
+    id: "reporting",
+    accessorFn: (row) =>
+      `${row.managerName ?? ""} ${row.joiningDate ?? ""}`,
+    header: "Manager / Joining",
+    cell: ({ row }) => (
+      <div className="min-w-[170px]">
+        <p className="font-medium text-slate-800">
+          {row.original.managerName || "-"}
+        </p>
+        <p className="text-xs text-slate-500">
+          Joined {formatDate(row.original.joiningDate)}
+        </p>
+      </div>
+    ),
   },
   {
     accessorKey: "projectNames",
@@ -147,10 +169,12 @@ export default function EmployeeList({
 
   return (
     <DataTable
-      title="Employee"
+      title="Employee Directory"
       columns={columns}
       data={employees}
-      rowClassName={() => "hover:bg-slate-50 p-10 "}
+      tableClassName="min-w-[980px]"
+      headCellClassName="whitespace-normal align-top leading-5"
+      bodyCellClassName="whitespace-normal break-words align-top leading-5"
     />
   );
 }

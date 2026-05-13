@@ -57,17 +57,17 @@ export default function FilterPanel({
   }, [filters, onApplyFilters]);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm md:p-6">
       <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Employee Filters</h2>
           <p className="text-sm text-slate-500">
             {activeFilterCount} active filter{activeFilterCount !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
 
-      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <div className="space-y-1.5">
           <label className={labelClass}>Employee ID</label>
           <Input
@@ -237,7 +237,7 @@ export default function FilterPanel({
           </Select>
         </div>
 
-        <div className="flex gap-2 pt-5 sm:col-span-2 lg:col-span-2 xl:col-span-1">
+        <div className="flex gap-2 pt-5 sm:col-span-2 lg:col-span-3 xl:col-span-2">
           <Button
             onClick={handleApply}
             className="h-10 flex-1 rounded-xl bg-blue-600 hover:bg-blue-700"

@@ -8,6 +8,8 @@ import {
   EmployeeFilters,
 } from "@/lib/actions/employee-profiles";
 import { EmployeeProfile } from "@/types";
+import { useSidebar } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 interface DashboardDesignContentProps {
   initialEmployees: EmployeeProfile[];
@@ -24,9 +26,10 @@ export default function DashboardDesignContent({
   departments,
   jobRoles,
   workLocations,
-  projects
+  projects,
 }: DashboardDesignContentProps) {
-  const [employees, setEmployees] = useState<EmployeeProfile[]>(initialEmployees);
+  const [employees, setEmployees] =
+    useState<EmployeeProfile[]>(initialEmployees);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleApplyFilters = useCallback(async (filters: EmployeeFilters) => {
@@ -53,8 +56,16 @@ export default function DashboardDesignContent({
     }
   }, []);
 
+  const { state } = useSidebar();
+  console.log(state);
+
   return (
-    <div className="space-y-4 bg-gray-100">
+    <div
+      className={cn(
+        "space-y-5 rounded-[28px] bg-slate-100/80 p-3 md:p-4",
+        state === "collapsed" ? "w-[95vw]" : "w-[80vw]",
+      )}
+    >
       <FilterPanel
         companies={companies}
         departments={departments}
@@ -64,7 +75,7 @@ export default function DashboardDesignContent({
         onApplyFilters={handleApplyFilters}
         onResetFilters={handleResetFilters}
       />
-      <div className="min-w-0">
+      <div className="">
         <EmployeeList employees={employees} isLoading={isLoading} />
       </div>
     </div>

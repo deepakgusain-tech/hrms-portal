@@ -28,12 +28,18 @@ export const getJobRoleColumns = ({
     {
       accessorKey: "description",
       header: "Description",
-      cell: ({ row }) => row.original.description ?? "-",
+      cell: ({ row }) => {
+         return (
+          <div className="flex gap-2 text-wrap">
+              {row.original.description ?? "-"}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "createdAt",
       header: "Created Date",
-      cell: ({ row }) =>
+      cell: ({ row }) => 
         row.original.createdAt
           ? new Date(row.original.createdAt).toLocaleDateString("en-GB")
           : "-",

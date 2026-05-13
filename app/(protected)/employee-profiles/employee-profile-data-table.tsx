@@ -47,6 +47,9 @@ export default function EmployeeProfileDataTable({
       title={title}
       actions={actions}
       rowHref={(row) => `/employee-dashboard?employeeId=${row.id}`}
+      tableClassName="min-w-[920px]"
+      headCellClassName="whitespace-normal align-top leading-5"
+      bodyCellClassName="whitespace-normal break-words align-top leading-5"
     />
   );
 }

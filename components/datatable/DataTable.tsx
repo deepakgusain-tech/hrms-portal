@@ -42,6 +42,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../ui/card"
+import { cn } from "@/lib/utils"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -50,6 +51,9 @@ interface DataTableProps<TData, TValue> {
   actions?: React.ReactNode
   rowClassName?: (row: TData) => string
   rowHref?: (row: TData) => string | undefined
+  tableClassName?: string
+  headCellClassName?: string
+  bodyCellClassName?: string
 }
 
 export function DataTable<TData, TValue>({
@@ -59,6 +63,9 @@ export function DataTable<TData, TValue>({
   actions,
   rowClassName,
   rowHref,
+  tableClassName,
+  headCellClassName,
+  bodyCellClassName,
 }: DataTableProps<TData, TValue>) {
   const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -187,18 +194,21 @@ export function DataTable<TData, TValue>({
         {/* Table */}
         <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="max-w-full overflow-x-auto">
-            <Table className="w-full">
+            <Table className={cn("table-fixed w-full", tableClassName)}>
               <TableHeader className="bg-gradient-to-r from-cyan-600 to-sky-500">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
                     key={headerGroup.id}
-                    className="border-b-0 hover:bg-transparent"
+                    className="border-b-0 hover:bg-transparent w-full"
                   >
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
-                        className="cursor-pointer whitespace-nowrap px-4 py-4 text-sm font-semibold text-white"
+                        className={cn(
+                          "cursor-pointer whitespace-nowrap px-4 py-4 text-sm font-semibold text-white",
+                          headCellClassName
+                        )}
                       >
                         <div className="flex items-center gap-2">
                           {flexRender(
@@ -262,7 +272,10 @@ export function DataTable<TData, TValue>({
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          className="whitespace-nowrap px-4 py-4 text-sm text-slate-700"
+                          className={cn(
+                            "whitespace-nowrap px-4 py-4 text-sm text-slate-700",
+                            bodyCellClassName
+                          )}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,

@@ -50,7 +50,7 @@ export default async function ProtectedLayout({
         accessibleRoutes={accessibleRoutes}
       />
 
-      <SidebarInset className="flex h-screen min-w-0 flex-col overflow-hidden">
+      <SidebarInset className="flex h-screen flex-col overflow-hidden">
         <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-white px-4">
           <SidebarTrigger />
         </header>
