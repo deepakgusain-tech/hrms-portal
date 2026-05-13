@@ -100,6 +100,8 @@
       { name: "Project Members", description: "Project Members Module", route: "/project-members" },
      
       { name: "Employer", description: "Employer Module", route: "/employers" },
+      { name: "Company", description: "Company Module", route: "/companies" },
+
       {
         name: "Configuration",
         description: "Configuration Module",
