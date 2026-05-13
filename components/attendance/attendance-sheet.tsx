@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Download, Filter } from "lucide-react";
+import { CalendarRange, Download, Filter, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -159,22 +159,31 @@ export function AttendanceSheet({
   };
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm">
+    <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <CardTitle className="text-xl">{title}</CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <CalendarRange className="size-5 text-cyan-700" />
+              {title}
+            </CardTitle>
+            <p className="mt-1 text-sm text-slate-500">
+              {sheet.rows.length} employee record(s) loaded for {sheet.month}/
+              {sheet.year}
+            </p>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <input
               value={year}
               onChange={(event) => setYear(event.target.value)}
-              className="h-9 w-24 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-10 w-24 rounded-lg border border-slate-200 px-3 text-sm"
               type="number"
               min="2020"
             />
             <select
               value={month}
               onChange={(event) => setMonth(event.target.value)}
-              className="h-9 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
             >
               {Array.from({ length: 12 }, (_, index) => (
                 <option key={index + 1} value={index + 1}>
@@ -189,7 +198,7 @@ export function AttendanceSheet({
                 <select
                   value={departmentId}
                   onChange={(event) => setDepartmentId(event.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 px-3 text-sm"
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
                 >
                   <option value="all">All departments</option>
                   {departments.map((department) => (
@@ -201,7 +210,7 @@ export function AttendanceSheet({
                 <select
                   value={employeeId}
                   onChange={(event) => setEmployeeId(event.target.value)}
-                  className="h-9 rounded-lg border border-slate-200 px-3 text-sm"
+                  className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
                 >
                   <option value="all">All employees</option>
                   {employees.map((employee) => (
@@ -212,12 +221,20 @@ export function AttendanceSheet({
                 </select>
               </>
             )}
-            <Button onClick={applyFilters} disabled={isPending} variant="outline">
+            <Button
+              onClick={applyFilters}
+              disabled={isPending}
+              variant="outline"
+              className="h-10"
+            >
               <Filter />
               Apply
             </Button>
             {showExport && (
-              <Button onClick={() => exportCsv(sheet)} className="bg-blue-600 hover:bg-blue-700">
+              <Button
+                onClick={() => exportCsv(sheet)}
+                className="h-10 bg-cyan-600 hover:bg-cyan-700"
+              >
                 <Download />
                 Export CSV
               </Button>
@@ -230,6 +247,17 @@ export function AttendanceSheet({
           <div className="space-y-5">
             {compactRow ? (
               <>
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <Users className="size-4 text-cyan-700" />
+                    Monthly summary
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    A calendar view of your current month with day-by-day
+                    attendance markers.
+                  </p>
+                </div>
+
                 <div className="grid gap-3 sm:grid-cols-5">
                   <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
                     <p className="text-xs font-medium uppercase text-emerald-700">
@@ -273,7 +301,7 @@ export function AttendanceSheet({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-7 gap-2">
+                <div className="grid grid-cols-7 gap-2 rounded-lg border border-slate-200 bg-white p-3">
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                     (weekday) => (
                       <div
@@ -314,9 +342,9 @@ export function AttendanceSheet({
         ) : (
         <div className="max-w-full overflow-x-auto rounded-lg border border-slate-200">
           <table className="min-w-[1100px] w-full border-collapse text-sm">
-            <thead className="bg-slate-900 text-white">
+            <thead className="bg-slate-50 text-slate-600">
               <tr>
-                <th className="sticky left-0 z-10 bg-slate-900 px-3 py-3 text-left">
+                <th className="sticky left-0 z-10 bg-slate-50 px-3 py-3 text-left">
                   Employee
                 </th>
                 {days.map((day) => (
@@ -337,7 +365,7 @@ export function AttendanceSheet({
                       {row.employeeName}
                     </div>
                     <div className="text-xs text-slate-500">
-                      {row.employeeCode} · {row.departmentName}
+                      {[row.employeeCode, row.departmentName].filter(Boolean).join(" - ")}
                     </div>
                   </td>
                   {days.map((day) => {
@@ -379,3 +407,4 @@ export function AttendanceSheet({
     </Card>
   );
 }
+

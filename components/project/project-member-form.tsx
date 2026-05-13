@@ -11,12 +11,12 @@ import {
 } from "lucide-react";
 import z from "zod";
 import { toast } from "sonner";
-import { Status } from "@prisma/client";
 
 import { projectMemberDefaultValues } from "@/lib/constants";
 import { projectMemberSchema } from "@/lib/validators";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { EmployeeProfile, Project } from "@/types";
+import { EmployeeProfile } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -41,19 +41,20 @@ import { Calendar } from "../ui/calendar";
 import { createProjectMember, updateProjectMember } from "@/lib/actions/project-members";
 
 type FormValues = z.infer<typeof projectMemberSchema>;
+type ProjectOption = {
+  id: string;
+  name: string;
+};
 
 type Props = {
   data?: FormValues;
   update: boolean;
   employees: EmployeeProfile[];
-  projects: any;
+  projects: ProjectOption[];
 };
 
 const fieldClass =
   "h-12 w-full rounded-2xl border border-indigo-100 bg-white/95 shadow-sm transition-all duration-200 hover:border-cyan-200 focus:ring-2 focus:ring-indigo-300 focus:border-cyan-300";
-
-const textAreaClass =
-  "min-h-28 w-full rounded-2xl border border-indigo-100 bg-white/95 shadow-sm transition-all duration-200 hover:border-cyan-200 focus:ring-2 focus:ring-indigo-300 focus:border-cyan-300";
 
 const ProjectMemberForm = ({ data, update, employees, projects }: Props) => {
   const router = useRouter();
@@ -62,10 +63,15 @@ const ProjectMemberForm = ({ data, update, employees, projects }: Props) => {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(projectMemberSchema),
-    defaultValues: data ?? projectMemberDefaultValues,
+    defaultValues: data
+      ? {
+        ...data,
+        employeeIds: data.employeeId ? [data.employeeId] : [],
+      }
+      : projectMemberDefaultValues,
   });
 
-  const onSubmit: SubmitHandler<FormValues> = (values : any) => {
+  const onSubmit: SubmitHandler<FormValues> = (values) => {
     startTransition(async () => {
       const res = update && id
         ? await updateProjectMember(values, id)
@@ -107,9 +113,7 @@ const ProjectMemberForm = ({ data, update, employees, projects }: Props) => {
 
                 <Select
                   value={field.value}
-                  onValueChange={(value) =>
-                    field.onChange(value as Status)
-                  }
+                  onValueChange={field.onChange}
                 >
                   <FormControl>
                     <SelectTrigger className={`${fieldClass} w-full`}>
@@ -118,7 +122,7 @@ const ProjectMemberForm = ({ data, update, employees, projects }: Props) => {
                   </FormControl>
 
                   <SelectContent className="rounded-2xl border border-indigo-100 shadow-xl">
-                    {projects.length > 0 && projects.map((project : any) => (
+                    {projects.length > 0 && projects.map((project) => (
                       <SelectItem key={project.id} value={project.id as string}>
                         {project.name}
                       </SelectItem>
@@ -131,40 +135,40 @@ const ProjectMemberForm = ({ data, update, employees, projects }: Props) => {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="employeeId"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  Employee
-                </FormLabel>
+          {update && (
+            <FormField
+              control={form.control}
+              name="employeeId"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel className="text-sm font-semibold text-slate-700">
+                    Employee
+                  </FormLabel>
 
-                <Select
-                  value={field.value}
-                  onValueChange={(value) =>
-                    field.onChange(value as Status)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger className={`${fieldClass} w-full`}>
-                      <SelectValue placeholder="Select employee" />
-                    </SelectTrigger>
-                  </FormControl>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className={`${fieldClass} w-full`}>
+                        <SelectValue placeholder="Select employee" />
+                      </SelectTrigger>
+                    </FormControl>
 
-                  <SelectContent className="rounded-2xl border border-indigo-100 shadow-xl">
-                    {employees.length > 0 && employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id as string}>
-                        {employee.employeeName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectContent className="rounded-2xl border border-indigo-100 shadow-xl">
+                      {employees.length > 0 && employees.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id as string}>
+                          {employee.employeeName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
@@ -205,6 +209,79 @@ const ProjectMemberForm = ({ data, update, employees, projects }: Props) => {
 
 
         </div>
+
+        {!update && (
+          <FormField
+            control={form.control}
+            name="employeeIds"
+            render={({ field }) => {
+              const selectedMembers = field.value ?? [];
+
+              return (
+                <FormItem>
+                  <div className="flex flex-col gap-1">
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Members
+                    </FormLabel>
+                    <p className="text-sm text-slate-500">
+                      Select one or more employees to add to the selected project.
+                    </p>
+                  </div>
+
+                  <div className="grid max-h-72 gap-3 overflow-y-auto rounded-2xl border border-indigo-100 bg-white/95 p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-3">
+                    {employees.map((employee) => {
+                      const employeeId = employee.id ?? "";
+                      const checked = selectedMembers.includes(employeeId);
+
+                      return (
+                        <FormItem
+                          key={employee.id}
+                          className="flex items-start gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-3"
+                        >
+                          <FormControl>
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(isChecked) => {
+                                if (!employeeId) {
+                                  return;
+                                }
+
+                                field.onChange(
+                                  isChecked === true
+                                    ? [...selectedMembers, employeeId]
+                                    : selectedMembers.filter((id) => id !== employeeId),
+                                );
+                              }}
+                            />
+                          </FormControl>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-slate-800">
+                              {employee.employeeName}
+                            </p>
+                            <p className="truncate text-xs text-slate-500">
+                              {employee.employeeCode || employee.email || "Employee"}
+                            </p>
+                          </div>
+                        </FormItem>
+                      );
+                    })}
+
+                    {!employees.length && (
+                      <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 sm:col-span-2 xl:col-span-3">
+                        No employees found for project assignment.
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-sm font-medium text-cyan-700">
+                    {selectedMembers.length} member(s) selected
+                  </p>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+        )}
 
         {/* Submit */}
         <div className="pt-2">

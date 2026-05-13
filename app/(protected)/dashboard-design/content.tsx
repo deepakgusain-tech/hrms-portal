@@ -54,7 +54,7 @@ export default function DashboardDesignContent({
   }, []);
 
   return (
-    <div className="flex mt-[-30px] bg-gray-100">
+    <div className="space-y-4 bg-gray-100">
       <FilterPanel
         companies={companies}
         departments={departments}
@@ -64,10 +64,8 @@ export default function DashboardDesignContent({
         onApplyFilters={handleApplyFilters}
         onResetFilters={handleResetFilters}
       />
-      <div className="flex-1 overflow-auto">
-        <div className="p-2 mt-5">
-          <EmployeeList employees={employees} isLoading={isLoading} />
-        </div>
+      <div className="min-w-0">
+        <EmployeeList employees={employees} isLoading={isLoading} />
       </div>
     </div>
   );

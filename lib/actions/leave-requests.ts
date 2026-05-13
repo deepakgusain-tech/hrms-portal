@@ -9,6 +9,7 @@ import {
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { isHrJobRoleName } from "@/lib/employee-job-role";
 import { prisma } from "@/lib/prisma";
 import { canManageAllAttendance } from "@/lib/rbac";
 import { formatError } from "@/lib/utils";
@@ -97,23 +98,17 @@ async function getCurrentUser() {
     throw new Error("Unauthorized");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      role: true,
-    },
-  });
-
-  if (!user) {
-    if (session.user.role?.toLowerCase() !== "employee") {
-      throw new Error("Unauthorized");
-    }
-
+  if (session.user.role?.toLowerCase() === "employee") {
     const employeeProfile = await prisma.employeeProfile.findFirst({
       where: { email: session.user.email },
       select: {
         id: true,
         employeeName: true,
+        jobRole: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -125,10 +120,23 @@ async function getCurrentUser() {
       id: session.user.id,
       email: session.user.email,
       role: {
-        name: "employee",
+        name: isHrJobRoleName(employeeProfile.jobRole?.name)
+          ? "HR"
+          : "employee",
       },
       employeeProfile,
     };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: {
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("Unauthorized");
   }
 
   const employeeProfile = await prisma.employeeProfile.findFirst({
@@ -395,11 +403,18 @@ export async function reviewLeaveRequest(
       throw new Error("Only pending leave requests can be reviewed");
     }
 
+    const reviewer = currentUser.email
+      ? await prisma.user.findFirst({
+          where: { email: currentUser.email },
+          select: { id: true },
+        })
+      : null;
+
     const request = await prisma.leaveRequest.update({
       where: { id },
       data: {
         status: input.status,
-        reviewedById: currentUser.id,
+        reviewedById: reviewer?.id ?? null,
         reviewedAt: new Date(),
         reviewRemark: input.reviewRemark?.trim() || null,
       },

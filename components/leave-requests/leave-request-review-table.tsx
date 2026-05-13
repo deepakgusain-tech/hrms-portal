@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, X } from "lucide-react";
+import { Check, MessageSquareText, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -70,15 +70,21 @@ export function LeaveRequestReviewTable({
   };
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm">
+    <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100">
-        <CardTitle className="text-xl">Leave Requests</CardTitle>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <CardTitle className="text-xl">Leave Requests</CardTitle>
+          <p className="text-sm text-slate-500">
+            Pending rows stay editable until a review decision is saved.
+          </p>
+        </div>
       </CardHeader>
       <CardContent className="pt-5">
-        <div className="max-w-full overflow-x-auto">
+        <div className="overflow-hidden rounded-lg border border-slate-200">
+          <div className="max-w-full overflow-x-auto">
           <table className="w-full min-w-[980px] text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left text-slate-500">
+              <tr className="border-b border-slate-100 bg-slate-50 text-left text-slate-600">
                 <th className="px-3 py-3">Employee</th>
                 <th className="px-3 py-3">Type</th>
                 <th className="px-3 py-3">Dates</th>
@@ -90,17 +96,22 @@ export function LeaveRequestReviewTable({
               </tr>
             </thead>
             <tbody>
-              {requests.map((request) => {
+              {requests.map((request, index) => {
                 const isPending = request.status === "PENDING";
 
                 return (
-                  <tr key={request.id} className="border-b border-slate-100">
+                  <tr
+                    key={request.id}
+                    className={`border-b border-slate-100 ${
+                      index % 2 === 0 ? "bg-white" : "bg-slate-50/60"
+                    }`}
+                  >
                     <td className="px-3 py-3">
                       <div className="font-medium text-slate-900">
                         {request.employeeName}
                       </div>
                       <div className="text-xs text-slate-500">
-                        {request.employeeCode} · {request.departmentName}
+                        {request.employeeCode} - {request.departmentName}
                       </div>
                     </td>
                     <td className="px-3 py-3">
@@ -129,12 +140,13 @@ export function LeaveRequestReviewTable({
                               [request.id]: event.target.value,
                             }))
                           }
-                          className="min-h-16 min-w-52"
+                          className="min-h-16 min-w-52 border-slate-200 bg-white"
                           placeholder="Optional remark"
                           disabled={pendingId === request.id}
                         />
                       ) : (
-                        <span className="text-slate-600">
+                        <span className="inline-flex items-start gap-2 text-slate-600">
+                          <MessageSquareText className="mt-0.5 size-4 shrink-0 text-cyan-700" />
                           {request.reviewRemark || "-"}
                         </span>
                       )}
@@ -154,6 +166,7 @@ export function LeaveRequestReviewTable({
                           <Button
                             size="sm"
                             variant="outline"
+                            className="border-slate-300"
                             disabled={!!pendingId}
                             onClick={() => review(request.id, "REJECTED")}
                           >
@@ -182,8 +195,10 @@ export function LeaveRequestReviewTable({
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
+

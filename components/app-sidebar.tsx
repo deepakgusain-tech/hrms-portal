@@ -5,14 +5,18 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRightLeft,
+  BadgeCheck,
   Briefcase,
   Building2,
   CalendarCheck,
   CalendarPlus,
+  Search,
   FolderArchive,
   Gauge,
   IdCard,
+  ListChecks,
   LayoutGrid,
+  NotebookText,
   Settings,
   User2Icon,
   UserCog,
@@ -47,6 +51,7 @@ type SidebarUser = {
 };
 
 type SidebarRole = string | undefined;
+type SidebarJobRole = string | undefined;
 
 type AppConfig = {
   name?: string | null;
@@ -73,6 +78,11 @@ const menu: MenuGroup[] = [
     children: [
       { name: "Overview", url: "/dashboard", icon: <Gauge size={18} /> },
       {
+        name: "Employee Search",
+        url: "/dashboard-design",
+        icon: <Search size={18} />,
+      },
+      {
         name: "Employee Dashboard",
         url: "/employee-dashboard",
         icon: <Users2Icon size={18} />,
@@ -92,6 +102,11 @@ const menu: MenuGroup[] = [
         name: "Dept & Org Chart",
         url: "/department",
         icon: <Building2 size={18} />,
+      },
+      {
+        name: "Job Roles",
+        url: "/job-roles",
+        icon: <BadgeCheck size={18} />,
       },
       {
         name: "Work Location",
@@ -117,6 +132,11 @@ const menu: MenuGroup[] = [
         name: "Leave Requests",
         url: "/leave-requests",
         icon: <CalendarPlus size={18} />,
+      },
+      {
+        name: "EOD Reporting",
+        url: "/eod-reporting",
+        icon: <NotebookText size={18} />,
       },
     ],
   },
@@ -152,6 +172,11 @@ const menu: MenuGroup[] = [
         icon: <UserCog size={18} />,
       },
       {
+        name: "Project Tracking",
+        url: "/project-tracking",
+        icon: <FolderArchive size={18} />,
+      },
+      {
         name: "Task Creation",
         url: "/tasks",
         icon: <UserCog size={18} />,
@@ -165,29 +190,166 @@ const menu: MenuGroup[] = [
   },
 ];
 
-function getMenuByRole(role?: SidebarRole): MenuGroup[] {
+function isHrJobRole(jobRole?: SidebarJobRole) {
+  return !!jobRole?.toLowerCase().includes("hr");
+}
+
+function isManagerJobRole(jobRole?: SidebarJobRole) {
+  return !!jobRole?.toLowerCase().includes("manager");
+}
+
+function getMenuByRole(
+  role?: SidebarRole,
+  jobRole?: SidebarJobRole,
+  isManager?: boolean,
+): MenuGroup[] {
   if (role?.toLowerCase() === "employee") {
+    if (isHrJobRole(jobRole)) {
+      return [
+        {
+          name: "HR Dashboard",
+          url: "/employee-dashboard",
+          icon: <Gauge size={18} />,
+        },
+        {
+          name: "Employee Profiles",
+          url: "/employee-profiles",
+          icon: <Users2Icon size={18} />,
+        },
+        {
+          name: "Dept & Org Chart",
+          url: "/department",
+          icon: <Building2 size={18} />,
+        },
+        {
+          name: "Job Roles",
+          url: "/job-roles",
+          icon: <BadgeCheck size={18} />,
+        },
+        {
+          name: "Work Location",
+          url: "/work-location",
+          icon: <Briefcase size={18} />,
+        },
+        {
+          name: "Attendance",
+          url: "/attendance",
+          icon: <CalendarCheck size={18} />,
+        },
+        {
+          name: "Leave Requests",
+          url: "/leave-requests",
+          icon: <CalendarPlus size={18} />,
+        },
+        {
+          name: "Task Tracking",
+          url: "/employee-task-tracking",
+          icon: <ListChecks size={18} />,
+        },
+        {
+          name: "EOD Reporting",
+          url: "/eod-reporting",
+          icon: <NotebookText size={18} />,
+        },
+        {
+          name: "Transfer & Promotion",
+          url: "/transfer-promotion",
+          icon: <ArrowRightLeft size={18} />,
+        },
+        {
+          name: "Employee Documents",
+          url: "/employee-documents",
+          icon: <IdCard size={18} />,
+        },
+      ];
+    }
+
+    if (isManager || isManagerJobRole(jobRole)) {
+      return [
+        {
+          name: "Manager Dashboard",
+          url: "/employee-dashboard",
+          icon: <Gauge size={18} />,
+        },
+        {
+          name: "My Attendance",
+          url: "/attendance/my",
+          icon: <CalendarCheck size={18} />,
+        },
+        {
+          name: "My Leave Requests",
+          url: "/leave-requests/my",
+          icon: <CalendarPlus size={18} />,
+        },
+        {
+          name: "My Documents",
+          url: "/employee-documents",
+          icon: <IdCard size={18} />,
+        },
+        {
+          name: "My Task Tracking",
+          url: "/employee-task-tracking",
+          icon: <ListChecks size={18} />,
+        },
+        {
+          name: "EOD Reporting",
+          url: "/eod-reporting",
+          icon: <NotebookText size={18} />,
+        },
+        {
+          name: "Project Management",
+          icon: <FolderArchive size={18} />,
+          children: [
+            {
+              name: "Project Creation",
+              url: "/projects",
+              icon: <Building2 size={18} />,
+            },
+            {
+              name: "Project Members",
+              url: "/project-members",
+              icon: <UserCog size={18} />,
+            },
+            {
+              name: "Project Tracking",
+              url: "/project-tracking",
+              icon: <FolderArchive size={18} />,
+            },
+          ],
+        },
+      ];
+    }
+
     return [
       {
-        name: "Dashboard",
+        name: "Employee Dashboard",
+        url: "/employee-dashboard",
         icon: <Gauge size={18} />,
-        children: [
-          {
-            name: "Employee Dashboard",
-            url: "/employee-dashboard",
-            icon: <Users2Icon size={18} />,
-          },
-          {
-            name: "My Attendance",
-            url: "/attendance/my",
-            icon: <CalendarCheck size={18} />,
-          },
-          {
-            name: "Leave Requests",
-            url: "/leave-requests/my",
-            icon: <CalendarPlus size={18} />,
-          },
-        ],
+      },
+      {
+        name: "My Attendance",
+        url: "/attendance/my",
+        icon: <CalendarCheck size={18} />,
+      },
+      {
+        name: "My Leave Requests",
+        url: "/leave-requests/my",
+        icon: <CalendarPlus size={18} />,
+      },
+      {
+        name: "My Documents",
+        url: "/employee-documents",
+        icon: <IdCard size={18} />,
+      },
+      {
+        name: "My Task Tracking",
+        url: "/employee-task-tracking",
+        icon: <ListChecks size={18} />,
+      },
+      {
+        name: "EOD Reporting",
+        url: "/eod-reporting",
+        icon: <NotebookText size={18} />,
       },
     ];
   }
@@ -202,6 +364,11 @@ function getMenuByRole(role?: SidebarRole): MenuGroup[] {
             name: "Employer Dashboard",
             url: "/dashboard",
             icon: <Gauge size={18} />,
+          },
+          {
+            name: "Employee Search",
+            url: "/dashboard-design",
+            icon: <Search size={18} />,
           },
         ],
       },
@@ -246,12 +413,16 @@ function filterMenuByAccess(
 export function AppSidebar({
   user,
   role,
+  jobRole,
+  isManager,
   config,
   accessibleRoutes = [],
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user?: SidebarUser;
   role?: SidebarRole;
+  jobRole?: SidebarJobRole;
+  isManager?: boolean;
   config?: AppConfig;
   accessibleRoutes?: string[];
 }) {
@@ -262,7 +433,7 @@ export function AppSidebar({
   };
 
   const filteredMenu = filterMenuByAccess(
-    getMenuByRole(role),
+    getMenuByRole(role, jobRole, isManager),
     role,
     accessibleRoutes
   );
@@ -274,43 +445,45 @@ export function AppSidebar({
 
   const companyName = config?.name?.trim() || "SY ASSOCIATES";
   const logoSrc = config?.logo?.trim() || "";
+  const [failedLogoSrc, setFailedLogoSrc] = React.useState<string | null>(null);
+  const showLogo = Boolean(logoSrc) && failedLogoSrc !== logoSrc;
 
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
 
-  const pathname = usePathname()
-
-  console.log(pathname);
-
+  const pathname = usePathname();
 
   return (
     <Sidebar
       collapsible="icon"
-      className="border-r z-100 border-indigo-200/40 bg-gradient-to-b from-indigo-400 via-blue-400 to-cyan-300 text-white shadow-xl"
+      className="z-100 border-r border-slate-200 shadow-sm"
       {...props}
     >
-      <SidebarHeader className="border-b border-white/20 px-3 py-3">
+      <SidebarHeader className="border-b border-slate-200 px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="h-auto rounded-2xl p-2 hover:bg-white/15 transition-all duration-200"
+              className="h-auto rounded-lg p-2 transition-all duration-200 hover:bg-white"
             >
               <Link href={homeHref}>
                 <div className="flex items-center gap-3 min-w-0">
-                  {logoSrc ? (
+                  {showLogo && logoSrc ? (
                     <Image
                       src={logoSrc}
                       alt="Company Logo"
                       width={30}
                       height={30}
-                      className="rounded-xl object-cover shrink-0 border border-white/30"
+                      className="rounded-lg object-cover shrink-0 border border-slate-200"
+                      onError={() => setFailedLogoSrc(logoSrc)}
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-xl bg-white/25 shrink-0" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-sm font-semibold text-cyan-700">
+                      {companyName.charAt(0).toUpperCase()}
+                    </div>
                   )}
 
-                  <span className="text-sm font-semibold tracking-wide truncate text-white group-data-[collapsible=icon]:hidden">
+                  <span className="truncate text-sm font-semibold tracking-wide text-slate-900 group-data-[collapsible=icon]:hidden">
                     {companyName}
                   </span>
                 </div>
@@ -334,20 +507,20 @@ export function AppSidebar({
                         asChild
                         size="lg"
                         className={`
-                        rounded-2xl cursor-pointer transition-all duration-200
+                        rounded-lg cursor-pointer transition-all duration-200
                         ${pathname === group.url
-                            ? "bg-indigo-800 text-white shadow-lg ring-1 ring-white/20"
-                            : "text-white hover:bg-white/15 hover:text-white"
+                            ? "bg-cyan-600 text-white shadow-sm"
+                            : "text-slate-700 hover:bg-white hover:text-slate-900"
                           }
                       `}
                       >
                         <Link href={group.url!}>
                           <div
                             className={`
-                              flex aspect-square size-8 items-center justify-center rounded-xl
+                              flex aspect-square size-8 items-center justify-center rounded-lg
                               ${pathname === group.url
                                 ? "bg-white/20 text-white"
-                                : "border border-white/30 bg-white/20 text-white"
+                                : "border border-slate-200 bg-slate-50 text-cyan-700"
                               }
                             `}
                           >
@@ -358,7 +531,7 @@ export function AppSidebar({
                       </SidebarMenuButton>
                     </TooltipTrigger>
                     {isCollapsed && (
-                      <TooltipContent side="right" className="bg-slate-900 text-white border-0">
+                      <TooltipContent side="right" className="border-0 bg-slate-900 text-white">
                         {group.name}
                       </TooltipContent>
                     )}
@@ -370,8 +543,8 @@ export function AppSidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-white/20 p-2">
-        <div className="rounded-2xl bg-white/25 backdrop-blur-md ring-1 ring-white/20">
+      <SidebarFooter className="border-t border-slate-200 p-2">
+        <div className="rounded-lg bg-white ring-1 ring-slate-200">
           <NavUser user={navUser} />
         </div>
       </SidebarFooter>

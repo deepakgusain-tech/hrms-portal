@@ -8,6 +8,8 @@ import {
 } from "@prisma/client";
 import { EmployeeDocument } from "@/types";
 import { revalidatePath } from "next/cache";
+import type { DocumentReviewStatus } from "../document-review";
+import { isHrJobRoleName } from "../employee-job-role";
 import { prisma } from "../prisma";
 import { formatError } from "../utils";
 import { employeeDocumentSchema } from "../validators";
@@ -42,6 +44,7 @@ type EmployeeDocumentOwner = {
 
 type EmployeeDocumentAccess = {
   isEmployee: boolean;
+  isHrEmployee: boolean;
   owner: EmployeeDocumentOwner | null;
 };
 
@@ -52,6 +55,7 @@ async function getCurrentEmployeeAccess(): Promise<EmployeeDocumentAccess> {
   if (!isEmployee || !session?.user?.email) {
     return {
       isEmployee,
+      isHrEmployee: false,
       owner: null,
     };
   }
@@ -64,12 +68,26 @@ async function getCurrentEmployeeAccess(): Promise<EmployeeDocumentAccess> {
       id: true,
       employeeName: true,
       employeeCode: true,
+      jobRole: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 
+  const isHrEmployee = isHrJobRoleName(owner?.jobRole?.name);
+
   return {
     isEmployee,
-    owner,
+    isHrEmployee,
+    owner: owner
+      ? {
+          id: owner.id,
+          employeeName: owner.employeeName,
+          employeeCode: owner.employeeCode,
+        }
+      : null,
   };
 }
 
@@ -177,6 +195,13 @@ function mapEmployeeDocument(record: {
   experienceType: ExperienceType;
   experienceEntries: Prisma.JsonValue | null;
 
+  reviewStatus: DocumentReviewStatus;
+  reviewRemark: string | null;
+  reviewedAt: Date | null;
+  reviewedBy?: {
+    firstName: string;
+    lastName: string;
+  } | null;
   remark: string | null;
   status: Status;
   createdAt: Date;
@@ -206,6 +231,12 @@ function mapEmployeeDocument(record: {
       record.experienceEntries,
     ),
 
+    reviewStatus: record.reviewStatus,
+    reviewRemark: record.reviewRemark ?? "",
+    reviewedAt: record.reviewedAt?.toISOString() ?? "",
+    reviewedByName: record.reviewedBy
+      ? `${record.reviewedBy.firstName} ${record.reviewedBy.lastName}`.trim()
+      : "",
     remark: record.remark ?? "",
     status: record.status,
 
@@ -220,12 +251,12 @@ export async function getEmployeeDocuments(): Promise<EmployeeDocument[]> {
   try {
     const access = await getCurrentEmployeeAccess();
 
-    if (access.isEmployee && !access.owner) {
+    if (access.isEmployee && !access.isHrEmployee && !access.owner) {
       return [];
     }
 
     const records = await prisma.employeeDocument.findMany({
-      where: access.owner
+      where: access.owner && !access.isHrEmployee
         ? {
             employeeId: access.owner.id,
           }
@@ -237,6 +268,12 @@ export async function getEmployeeDocuments(): Promise<EmployeeDocument[]> {
         employee: {
           select: {
             employeeName: true,
+          },
+        },
+        reviewedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
           },
         },
       },
@@ -254,7 +291,7 @@ export async function createEmployeeDocument(
   try {
     const access = await getCurrentEmployeeAccess();
 
-    if (access.isEmployee && !access.owner) {
+    if (access.isEmployee && !access.isHrEmployee && !access.owner) {
       return {
         success: false,
         message: "Your employee profile is not linked yet",
@@ -262,7 +299,7 @@ export async function createEmployeeDocument(
     }
 
     const record = employeeDocumentSchema.parse(
-      access.owner
+      access.owner && !access.isHrEmployee
         ? {
             ...data,
             employeeId: access.owner.id,
@@ -271,7 +308,11 @@ export async function createEmployeeDocument(
         : data,
     );
 
-    if (access.owner && record.employeeId !== access.owner.id) {
+    if (
+      access.owner &&
+      !access.isHrEmployee &&
+      record.employeeId !== access.owner.id
+    ) {
       return {
         success: false,
         message: "You can only add documents for your own profile",
@@ -299,6 +340,10 @@ export async function createEmployeeDocument(
             ? ((record.experienceEntries ?? []) as Prisma.InputJsonValue)
             : Prisma.JsonNull,
 
+        reviewStatus: "PENDING",
+        reviewRemark: null,
+        reviewedById: null,
+        reviewedAt: null,
         remark: record.remark || null,
         status: record.status,
       },
@@ -330,12 +375,19 @@ export async function getEmployeeDocumentById(id: string) {
               employeeName: true,
             },
           },
+          reviewedBy: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
         },
       });
 
     if (
       !record ||
       (access.isEmployee &&
+        !access.isHrEmployee &&
         (!access.owner || record.employeeId !== access.owner.id))
     ) {
       return {
@@ -364,7 +416,7 @@ export async function updateEmployeeDocument(
   try {
     const access = await getCurrentEmployeeAccess();
 
-    if (access.isEmployee && !access.owner) {
+    if (access.isEmployee && !access.isHrEmployee && !access.owner) {
       return {
         success: false,
         message: "Your employee profile is not linked yet",
@@ -372,7 +424,7 @@ export async function updateEmployeeDocument(
     }
 
     const record = employeeDocumentSchema.parse(
-      access.owner
+      access.owner && !access.isHrEmployee
         ? {
             ...data,
             employeeId: access.owner.id,
@@ -390,6 +442,7 @@ export async function updateEmployeeDocument(
     if (
       !existing ||
       (access.isEmployee &&
+        !access.isHrEmployee &&
         (!access.owner || existing.employeeId !== access.owner.id))
     ) {
       return {
@@ -420,6 +473,10 @@ export async function updateEmployeeDocument(
             ? ((record.experienceEntries ?? []) as Prisma.InputJsonValue)
             : Prisma.JsonNull,
 
+        reviewStatus: "PENDING",
+        reviewRemark: null,
+        reviewedById: null,
+        reviewedAt: null,
         remark: record.remark || null,
         status: record.status,
       },
@@ -432,6 +489,90 @@ export async function updateEmployeeDocument(
     return {
       success: true,
       message: "Employee document updated successfully",
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
+}
+
+export async function reviewEmployeeDocument(
+  id: string,
+  input: { reviewStatus?: DocumentReviewStatus; reviewRemark?: string },
+): Promise<ActionResponse> {
+  try {
+    const access = await getCurrentEmployeeAccess();
+
+    if (!access.isHrEmployee) {
+      return {
+        success: false,
+        message: "Only HR can review employee documents",
+      };
+    }
+
+    if (
+      input.reviewStatus !== "APPROVED" &&
+      input.reviewStatus !== "REJECTED"
+    ) {
+      return {
+        success: false,
+        message: "Review status must be approved or rejected",
+      };
+    }
+
+    const session = await auth();
+    const reviewer = session?.user?.email
+      ? await prisma.user.findFirst({
+          where: { email: session.user.email },
+          select: { id: true },
+        })
+      : null;
+
+    const existing = await prisma.employeeDocument.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      return {
+        success: false,
+        message: "Employee document not found",
+      };
+    }
+
+    const updated = await prisma.employeeDocument.update({
+      where: { id },
+      data: {
+        reviewStatus: input.reviewStatus,
+        reviewRemark: input.reviewRemark?.trim() || null,
+        reviewedById: reviewer?.id ?? null,
+        reviewedAt: new Date(),
+      },
+      include: {
+        employee: {
+          select: {
+            employeeName: true,
+          },
+        },
+        reviewedBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    revalidatePath("/employee-documents");
+    revalidatePath("/employee-dashboard");
+
+    return {
+      success: true,
+      message:
+        updated.reviewStatus === "APPROVED"
+          ? "Document approved"
+          : "Document rejected",
     };
   } catch (error) {
     return {

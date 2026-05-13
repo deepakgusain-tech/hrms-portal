@@ -7,15 +7,14 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   Loader2,
-  FileText,
-  StickyNote,
   CalendarIcon,
+  FileText,
+  UserRound,
 } from "lucide-react";
 import z from "zod";
 import { toast } from "sonner";
-import { ProjectStatus, Status } from "@prisma/client";
+import { ProjectStatus } from "@prisma/client";
 
-import { projectDefaultValues } from "@/lib/constants";
 import { projectSchema } from "@/lib/validators";
 
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createProject, updateProject } from "@/lib/actions/projects";
-import { User } from "@/types";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -48,16 +46,20 @@ type FormValues = z.infer<typeof projectSchema>;
 type Props = {
   data?: FormValues;
   update: boolean;
-  users: User[];
+  employees: {
+    id: string;
+    employeeName: string;
+    employeeCode: string;
+  }[];
 };
 
 const fieldClass =
-  "h-12 w-full rounded-2xl border border-indigo-100 bg-white/95 shadow-sm transition-all duration-200 hover:border-cyan-200 focus:ring-2 focus:ring-indigo-300 focus:border-cyan-300";
+  "h-11 w-full rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:border-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-500";
 
 const textAreaClass =
-  "min-h-28 w-full rounded-2xl border border-indigo-100 bg-white/95 shadow-sm transition-all duration-200 hover:border-cyan-200 focus:ring-2 focus:ring-indigo-300 focus:border-cyan-300";
+  "min-h-32 w-full rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:border-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-500";
 
-const ProjectForm = ({ data, update, users }: Props) => {
+const ProjectForm = ({ data, update, employees }: Props) => {
   const router = useRouter();
   const id = data?.id;
   const [isPending, startTransition] = React.useTransition();
@@ -67,7 +69,7 @@ const ProjectForm = ({ data, update, users }: Props) => {
     startDate: data?.startDate ?? null,
     endDate: data?.endDate ?? null,
     status: data?.status ?? ProjectStatus.ACTIVE,
-    createdById: data?.createdById!, // must exist (or handle properly)
+    createdById: data?.createdById ?? "",
     description: data?.description ?? undefined,
   };
 
@@ -102,205 +104,240 @@ const ProjectForm = ({ data, update, users }: Props) => {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-6"
+        className="space-y-5"
       >
-        {/* Top Fields */}
-        <div className="grid gap-5 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  Project Name
-                </FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Input
-                      placeholder="Enter project name"
-                      className={`${fieldClass}`}
-                      {...field}
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
+          <div className="space-y-5 rounded-2xl border border-slate-200 bg-slate-50/70 p-5">
+            <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-cyan-600 text-white">
+                <FileText className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">
+                  Project Details
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Basic timeline and ownership information.
+                </p>
+              </div>
+            </div>
 
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  Start Date
-                </FormLabel>
-                <FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value as Date}
-                        onSelect={field.onChange}
+            <div className="grid gap-5 md:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Project Name
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter project name"
+                        className={fieldClass}
+                        {...field}
                       />
-                    </PopoverContent>
-                  </Popover>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }: { field: any }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  End Date
-                </FormLabel>
-                <FormControl>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "justify-start text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={field.value as Date}
-                        onSelect={field.onChange}
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Start Date
+                    </FormLabel>
+                    <FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              fieldClass,
+                              "justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={field.value as Date}
+                            onSelect={field.onChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      End Date
+                    </FormLabel>
+                    <FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              fieldClass,
+                              "justify-start text-left font-normal",
+                              !field.value && "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {field.value ? (
+                              format(field.value, "PPP")
+                            ) : (
+                              <span>Pick a date</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={field.value as Date}
+                            onSelect={field.onChange}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="w-full">
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Status
+                    </FormLabel>
+
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) =>
+                        field.onChange(value as ProjectStatus)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger className={fieldClass}>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+
+                      <SelectContent className="rounded-xl border border-slate-200 shadow-xl">
+                        {Object.values(ProjectStatus).map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status.replaceAll("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel className="text-sm font-semibold text-slate-700">
+                      Description
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Describe goals, deliverables, and context"
+                        className={textAreaClass}
+                        {...field}
+                        value={field.value ?? ""}
                       />
-                    </PopoverContent>
-                  </Popover>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
 
-          <FormField
-            control={form.control}
-            name="createdById"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  Created By
-                </FormLabel>
+          <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+                <UserRound className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900">Owner</h3>
+                <p className="text-sm text-slate-500">
+                  Choose who is responsible for the project.
+                </p>
+              </div>
+            </div>
 
-                <Select
-                  value={field.value}
-                  onValueChange={(value) =>
-                    field.onChange(value as Status)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger className={`${fieldClass} w-full`}>
-                      <SelectValue placeholder="Select created by" />
-                    </SelectTrigger>
-                  </FormControl>
+            <FormField
+              control={form.control}
+              name="createdById"
+              render={({ field }) => (
+                <FormItem className="w-full">
+                  <FormLabel className="text-sm font-semibold text-slate-700">
+                    Created By
+                  </FormLabel>
 
-                  <SelectContent className="rounded-2xl border border-indigo-100 shadow-xl">
-                    {users.length > 0 && users.map((user) => (
-                      <SelectItem key={user.id} value={user.id as string}>
-                        {user.firstName} {user.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className={fieldClass}>
+                        <SelectValue placeholder="Select created by" />
+                      </SelectTrigger>
+                    </FormControl>
 
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                    <SelectContent className="rounded-xl border border-slate-200 shadow-xl">
+                      {employees.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          {employee.employeeName} ({employee.employeeCode})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  Status
-                </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                <Select
-                  value={field.value}
-                  onValueChange={(value) =>
-                    field.onChange(value as Status)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger className={`${fieldClass} w-full`}>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-
-                  <SelectContent className="rounded-2xl border border-indigo-100 shadow-xl">
-                    {Object.values(ProjectStatus).map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.charAt(0) + status.slice(1).toLowerCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <div className="rounded-xl bg-cyan-50 p-4 text-sm text-cyan-800">
+              Projects become easier to track once members and tasks are added
+              from the project tracking workspace.
+            </div>
+          </div>
         </div>
 
-        {/* Textareas */}
-        <div className="grid gap-5 grid-cols-1">
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold text-slate-700">
-                  Description
-                </FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Enter description"
-                    className={`${textAreaClass}`}
-                    {...field}
-                    value={field.value ?? ""}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Submit */}
-        <div className="pt-2">
+        <div className="flex justify-end border-t border-slate-100 pt-5">
           <Button
             type="submit"
             disabled={isPending}
-            className="h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 text-white shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-xl"
+            className="h-11 rounded-xl bg-cyan-600 px-8 text-white shadow-sm hover:bg-cyan-700"
           >
             {isPending ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

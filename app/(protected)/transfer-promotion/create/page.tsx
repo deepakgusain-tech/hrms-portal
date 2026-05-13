@@ -7,13 +7,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { canAccess } from "@/lib/rbac";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, ArrowRightLeft } from "lucide-react";
 
 const TransferPromotionCreatePage = async () => {
   const route = "/transfer-promotion";
-  const canCreate = await canAccess(route, "create");
+  const [canCreateByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "create"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canCreate = canCreateByRole || isHrEmployee;
 
   if (!canCreate) {
     redirect("/404");

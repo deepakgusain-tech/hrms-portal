@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Project } from "@/types";
 import { ColumnDef } from "@tanstack/react-table";
 import { EditIcon, Trash } from "lucide-react";
 import Link from "next/link";
@@ -11,12 +10,26 @@ type ProjectColumnOptions = {
   onDelete: (id: string) => void;
 };
 
+export type ProjectRow = {
+  id?: string;
+  name: string;
+  description?: string | null;
+  createdById: string;
+  createdBy?: {
+    employeeName?: string | null;
+    employeeCode?: string | null;
+  } | null;
+  startDate?: Date | string | null;
+  endDate?: Date | string | null;
+  status: string;
+};
+
 export const getProjectColumns = ({
   canEdit,
   canDelete,
   onDelete,
-}: ProjectColumnOptions): ColumnDef<any>[] => {
-  const columns: ColumnDef<any>[] = [
+}: ProjectColumnOptions): ColumnDef<ProjectRow>[] => {
+  const columns: ColumnDef<ProjectRow>[] = [
     {
       accessorKey: "name",
       header: "Name",
@@ -29,8 +42,8 @@ export const getProjectColumns = ({
     {
       accessorKey: "createdById",
       header: "Created By",
-      cell: ({ row }) => row.original.createdBy?.firstName && row.original.createdBy?.lastName
-        ? `${row.original.createdBy.firstName} ${row.original.createdBy.lastName}`
+      cell: ({ row }) => row.original.createdBy?.employeeName
+        ? `${row.original.createdBy.employeeName} (${row.original.createdBy.employeeCode})`
         : "-",  
     },
     {

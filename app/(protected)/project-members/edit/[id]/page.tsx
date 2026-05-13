@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getProjects } from "@/lib/actions/projects";
-import { getUsers } from "@/lib/actions/users";
 import { getEmployeeProfiles } from "@/lib/actions/employee-profiles";
 import { getProjectMemberById } from "@/lib/actions/project-members";
 import ProjectMemberForm from "@/components/project/project-member-form";
@@ -43,8 +42,6 @@ const ProjectEditPage = async ({
   const projects = await getProjects();
   const employees = await getEmployeeProfiles();
 
-  const users = await getUsers();
-
   return (
     <Card className="rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
       <CardHeader className="border-b border-slate-100 pb-5">
@@ -56,10 +53,10 @@ const ProjectEditPage = async ({
 
             <div>
               <CardTitle className="text-2xl font-bold text-slate-800">
-                Edit Project
+                Edit Project Member
               </CardTitle>
               <p className="mt-1 text-sm text-slate-500">
-                Update project details and settings
+                Update project member details and assignment
               </p>
             </div>
           </div>
@@ -68,7 +65,7 @@ const ProjectEditPage = async ({
             asChild
             className="rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-5 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-lg"
           >
-            <Link href="/projects">
+            <Link href="/project-members">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>

@@ -5,6 +5,7 @@ import {
   ColumnDef,
   Row,
   SortingState,
+  VisibilityState,
   PaginationState,
   flexRender,
   getCoreRowModel,
@@ -13,6 +14,8 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table"
+import { ArrowDown, ArrowUp, ChevronsUpDown, SlidersHorizontal } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import {
   Table,
@@ -25,6 +28,13 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import {
   Card,
@@ -39,6 +49,7 @@ interface DataTableProps<TData, TValue> {
   title?: string
   actions?: React.ReactNode
   rowClassName?: (row: TData) => string
+  rowHref?: (row: TData) => string | undefined
 }
 
 export function DataTable<TData, TValue>({
@@ -47,8 +58,12 @@ export function DataTable<TData, TValue>({
   title = "",
   actions,
   rowClassName,
+  rowHref,
 }: DataTableProps<TData, TValue>) {
+  const router = useRouter()
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [currentData, setCurrentData] = React.useState<TData[]>(data)
 
@@ -77,10 +92,12 @@ export function DataTable<TData, TValue>({
     columns,
     state: {
       sorting,
+      columnVisibility,
       globalFilter,
       pagination,
     },
     onSortingChange: setSorting,
+    onColumnVisibilityChange: setColumnVisibility,
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
     globalFilterFn,
@@ -90,15 +107,21 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
   })
 
-  const shouldScroll = columns.length > 9
+  const columnOptions = table
+    .getAllLeafColumns()
+    .filter((column) => column.getCanHide())
+
+  const isInteractiveElement = (target: EventTarget | null) =>
+    target instanceof HTMLElement &&
+    Boolean(target.closest("a, button, input, select, textarea, [role='button']"))
 
   return (
-    <Card className="min-w-0 rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
+    <Card className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
       <CardHeader className="border-b border-slate-100 pb-5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="text-2xl font-bold text-slate-800">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-2xl font-bold text-slate-900">
               {title}
             </CardTitle>
             <p className="mt-1 text-sm text-slate-500">
@@ -106,7 +129,7 @@ export function DataTable<TData, TValue>({
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex w-full flex-wrap gap-2 lg:w-auto lg:justify-end">
             {actions}
           </div>
         </div>
@@ -115,24 +138,57 @@ export function DataTable<TData, TValue>({
       {/* Content */}
       <CardContent className="min-w-0 space-y-5 pt-6">
         {/* Search */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <Input
             placeholder="Search records..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-11 max-w-sm rounded-2xl border-slate-200 bg-slate-50 px-4 focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="h-11 w-full max-w-sm rounded-2xl border-slate-200 bg-slate-50 px-4 focus-visible:ring-2 focus-visible:ring-indigo-500"
           />
 
-          <div className="text-sm text-slate-500">
-            Total: {table.getFilteredRowModel().rows.length}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-sm text-slate-500">
+              Total: {table.getFilteredRowModel().rows.length}
+            </div>
+
+            {columnOptions.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-9 rounded-xl border-slate-200 bg-white text-slate-600"
+                  >
+                    <SlidersHorizontal />
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>Filter columns</DropdownMenuLabel>
+                  {columnOptions.map((column) => (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) =>
+                        column.toggleVisibility(!!value)
+                      }
+                      className="capitalize"
+                    >
+                      {typeof column.columnDef.header === "string"
+                        ? column.columnDef.header
+                        : column.id}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
         {/* Table */}
-        <div className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className={shouldScroll ? "max-w-full overflow-x-auto" : "overflow-hidden"}>
-            <Table className={shouldScroll ? "min-w-[1200px]" : "w-full"}>
-              <TableHeader className="bg-gradient-to-r from-indigo-600 to-cyan-500">
+        <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="max-w-full overflow-x-auto">
+            <Table className="w-full">
+              <TableHeader className="bg-gradient-to-r from-cyan-600 to-sky-500">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
                     key={headerGroup.id}
@@ -150,13 +206,12 @@ export function DataTable<TData, TValue>({
                             header.getContext()
                           )}
 
-                          {{
-                            asc: "▲",
-                            desc: "▼",
-                          }[
-                            header.column.getIsSorted() as string
-                          ] ?? (
-                            <span className="text-white/50">↕</span>
+                          {header.column.getIsSorted() === "asc" ? (
+                            <ArrowUp className="size-4 text-white/80" />
+                          ) : header.column.getIsSorted() === "desc" ? (
+                            <ArrowDown className="size-4 text-white/80" />
+                          ) : (
+                            <ChevronsUpDown className="size-4 text-white/50" />
                           )}
                         </div>
                       </TableHead>
@@ -170,8 +225,34 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row, index) => (
                     <TableRow
                       key={row.id}
+                      role={rowHref?.(row.original) ? "link" : undefined}
+                      tabIndex={rowHref?.(row.original) ? 0 : undefined}
+                      onClick={(event) => {
+                        if (isInteractiveElement(event.target)) {
+                          return
+                        }
+
+                        const href = rowHref?.(row.original)
+                        if (href) {
+                          router.push(href)
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" || isInteractiveElement(event.target)) {
+                          return
+                        }
+
+                        const href = rowHref?.(row.original)
+                        if (href) {
+                          router.push(href)
+                        }
+                      }}
                       className={`border-b border-slate-100 transition-all hover:bg-cyan-50/50 ${
                         index % 2 === 0 ? "bg-white" : "bg-slate-50/40"
+                      } ${
+                        rowHref?.(row.original)
+                          ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2"
+                          : ""
                       } ${
                         rowClassName
                           ? rowClassName(row.original)
@@ -194,7 +275,7 @@ export function DataTable<TData, TValue>({
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length}
+                      colSpan={Math.max(table.getVisibleLeafColumns().length, 1)}
                       className="h-28 text-center text-slate-500"
                     >
                       No results found.

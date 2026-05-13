@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "./prisma";
+import { isCurrentEmployeeManager } from "./employee-job-role";
 
 export type PermissionAction = "view" | "create" | "edit" | "delete";
 
@@ -84,6 +85,19 @@ function isLeaveRequestRoute(route: string) {
   return route === "/leave-requests" || route === "/leave-requests/my";
 }
 
+function isEodReportingRoute(route: string) {
+  return route === "/eod-reporting";
+}
+
+function isProjectManagementRoute(route: string) {
+  return (
+    route === "/projects" ||
+    route === "/project-members" ||
+    route === "/project-tracking" ||
+    route === "/employee-task-tracking"
+  );
+}
+
 function isAdminUser(user: UserWithPermissions | null) {
   return !!user?.role?.name?.toLowerCase().includes("admin");
 }
@@ -132,12 +146,26 @@ export async function canAccess(route: string, action: PermissionAction) {
     return action === "view" || action === "edit";
   }
 
+  if (canManageAllAttendance(user.role?.name) && isEodReportingRoute(route)) {
+    return action !== "delete";
+  }
+
   if (
     isEmployeeUser(user) &&
     (route === "/employee-documents" ||
+      route === "/employee-task-tracking" ||
+      isEodReportingRoute(route) ||
       route === "/attendance" ||
       route === "/attendance/my" ||
       isLeaveRequestRoute(route))
+  ) {
+    return action !== "delete";
+  }
+
+  if (
+    isEmployeeUser(user) &&
+    isProjectManagementRoute(route) &&
+    (await isCurrentEmployeeManager())
   ) {
     return action !== "delete";
   }
@@ -176,12 +204,36 @@ export async function getRoutePermissions(route: string) {
     };
   }
 
+  if (canManageAllAttendance(user.role?.name) && isEodReportingRoute(route)) {
+    return {
+      canView: true,
+      canCreate: true,
+      canEdit: true,
+      canDelete: false,
+    };
+  }
+
   if (
     isEmployeeUser(user) &&
     (route === "/employee-documents" ||
+      route === "/employee-task-tracking" ||
+      isEodReportingRoute(route) ||
       route === "/attendance" ||
       route === "/attendance/my" ||
       isLeaveRequestRoute(route))
+  ) {
+    return {
+      canView: true,
+      canCreate: true,
+      canEdit: true,
+      canDelete: false,
+    };
+  }
+
+  if (
+    isEmployeeUser(user) &&
+    isProjectManagementRoute(route) &&
+    (await isCurrentEmployeeManager())
   ) {
     return {
       canView: true,
@@ -221,7 +273,7 @@ export async function getAccessibleRoutes() {
   const session = await auth();
 
   if (isEmployerRole(session?.user?.role)) {
-    return ["/dashboard"];
+    return ["/dashboard", "/dashboard-design"];
   }
 
   if (!user) {
@@ -233,6 +285,9 @@ export async function getAccessibleRoutes() {
       user.role?.roleModules.map((roleModule) => roleModule.module.route) || []
     );
     routes.add("/leave-requests");
+    routes.add("/eod-reporting");
+    routes.add("/dashboard-design");
+    routes.add("/project-tracking");
     return Array.from(routes);
   }
 
@@ -251,8 +306,16 @@ export async function getAccessibleRoutes() {
     );
 
     routes.add("/employee-documents");
+    routes.add("/employee-task-tracking");
+    routes.add("/eod-reporting");
     routes.add("/attendance/my");
     routes.add("/leave-requests/my");
+
+    if (await isCurrentEmployeeManager()) {
+      routes.add("/projects");
+      routes.add("/project-members");
+      routes.add("/project-tracking");
+    }
 
     return Array.from(routes);
   }
@@ -272,11 +335,13 @@ export async function getAccessibleRoutes() {
     );
 
     routes.add("/leave-requests");
+    routes.add("/dashboard-design");
+    routes.add("/project-tracking");
 
     return Array.from(routes);
   }
 
-  return (
+  const routes = new Set(
     user.role?.roleModules
       .filter((roleModule) => {
         return (
@@ -288,4 +353,12 @@ export async function getAccessibleRoutes() {
       })
       .map((roleModule) => roleModule.module.route) || []
   );
+
+  routes.add("/dashboard-design");
+  routes.add("/project-tracking");
+  if (canManageAllAttendance(user.role?.name)) {
+    routes.add("/eod-reporting");
+  }
+
+  return Array.from(routes);
 }

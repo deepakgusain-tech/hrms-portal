@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   Accordion,
@@ -32,11 +33,13 @@ import {
 
 import {
   Building2,
-  ImageIcon,
   Mail,
   Lock,
   Loader2,
   Save,
+  Server,
+  ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
 const inputStyle =
@@ -67,6 +70,10 @@ const ConfigurationForm = ({
       favicon: data?.favicon || "",
       email: data?.email || "",
       password: data?.password || "",
+      smtpHost: data?.smtpHost || "",
+      smtpPort: data?.smtpPort || 465,
+      smtpSecure: data?.smtpSecure ?? true,
+      smtpFromName: data?.smtpFromName || "",
     },
   });
 
@@ -77,6 +84,10 @@ const ConfigurationForm = ({
       favicon: data?.favicon || "",
       email: data?.email || "",
       password: data?.password || "",
+      smtpHost: data?.smtpHost || "",
+      smtpPort: data?.smtpPort || 465,
+      smtpSecure: data?.smtpSecure ?? true,
+      smtpFromName: data?.smtpFromName || "",
     });
   }, [data, form]);
 
@@ -117,6 +128,28 @@ const ConfigurationForm = ({
         formData.set(
           "password",
           values.password || ""
+        );
+
+        formData.set(
+          "smtpHost",
+          values.smtpHost || ""
+        );
+
+        formData.set(
+          "smtpPort",
+          values.smtpPort
+            ? String(values.smtpPort)
+            : ""
+        );
+
+        formData.set(
+          "smtpSecure",
+          String(values.smtpSecure ?? true)
+        );
+
+        formData.set(
+          "smtpFromName",
+          values.smtpFromName || ""
         );
 
         if (values.logo instanceof File) {
@@ -424,6 +457,101 @@ const ConfigurationForm = ({
                         </div>
                       </FormControl>
 
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="smtpHost"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SMTP Host</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Server className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                          <Input
+                            placeholder="smtp.example.com"
+                            disabled={!canEdit}
+                            className={`${inputStyle} pl-11`}
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="smtpPort"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>SMTP Port</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <ShieldCheck className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                          <Input
+                            type="number"
+                            min={1}
+                            placeholder="465"
+                            disabled={!canEdit}
+                            className={`${inputStyle} pl-11`}
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(
+                                e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined
+                              )
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="smtpSecure"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value ?? true}
+                            disabled={!canEdit}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormLabel className="m-0">Use SSL/TLS</FormLabel>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="smtpFromName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sender Name</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <UserRound className="absolute left-4 top-4 h-4 w-4 text-cyan-500" />
+                          <Input
+                            placeholder="HRMS Portal"
+                            disabled={!canEdit}
+                            className={`${inputStyle} pl-11`}
+                            {...field}
+                          />
+                        </div>
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -1,4 +1,3 @@
-import { getProjects } from '@/lib/actions/projects';
 import { getRoutePermissions } from '@/lib/rbac';
 import { redirect } from 'next/navigation';
 import ProjectDataTable from './project-datatable';

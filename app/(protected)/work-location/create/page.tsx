@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { canAccess } from "@/lib/rbac";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -13,7 +14,11 @@ import { ArrowLeft, MapPinPlus } from "lucide-react";
 
 const WorkLocationCreatePage = async () => {
   const route = "/work-location";
-  const canCreate = await canAccess(route, "create");
+  const [canCreateByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "create"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canCreate = canCreateByRole || isHrEmployee;
 
   if (!canCreate) {
     redirect("/404");

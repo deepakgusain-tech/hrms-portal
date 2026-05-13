@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Clock, LogIn, LogOut } from "lucide-react";
+import { Clock, LogIn, LogOut, NotebookPen } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -73,30 +73,37 @@ export function AttendanceMarkPanel({
   const hasCheckedIn = !!record?.checkIn;
   const hasCheckedOut = !!record?.checkOut;
   const canMarkAttendance = canCreate && !!selectedEmployeeId;
+  const statusLabel = record?.status?.replaceAll("_", " ") || "Ready";
 
   return (
-    <Card className="border-slate-200 bg-white shadow-sm">
+    <Card className="rounded-lg border-slate-200 bg-white shadow-sm">
       <CardHeader className="border-b border-slate-100">
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <Clock className="size-5 text-blue-600" />
-          Today Attendance
-        </CardTitle>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Clock className="size-5 text-cyan-700" />
+            Today Attendance
+          </CardTitle>
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium uppercase tracking-wide text-slate-600">
+            <span className="h-2 w-2 rounded-full bg-cyan-600" />
+            {statusLabel}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-5 pt-5">
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-medium uppercase text-slate-500">
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-4">
+            <p className="text-xs font-medium uppercase text-emerald-700">
               Check In
             </p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">
+            <p className="mt-2 text-2xl font-semibold text-emerald-900">
               {formatTime(record?.checkIn)}
             </p>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-medium uppercase text-slate-500">
+          <div className="rounded-lg border border-sky-100 bg-sky-50 p-4">
+            <p className="text-xs font-medium uppercase text-sky-700">
               Check Out
             </p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">
+            <p className="mt-2 text-2xl font-semibold text-sky-900">
               {formatTime(record?.checkOut)}
             </p>
           </div>
@@ -111,31 +118,42 @@ export function AttendanceMarkPanel({
         </div>
 
         {canChooseEmployee && (
-          <select
-            value={selectedEmployeeId}
-            onChange={(event) => {
-              setSelectedEmployeeId(event.target.value);
-              setRecord(undefined);
-              setRemarks("");
-            }}
-            className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
-            disabled={isPending}
-          >
-            {employees.map((employee) => (
-              <option key={employee.id} value={employee.id}>
-                {employee.employeeName} ({employee.employeeCode})
-              </option>
-            ))}
-          </select>
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+              Employee
+            </p>
+            <select
+              value={selectedEmployeeId}
+              onChange={(event) => {
+                setSelectedEmployeeId(event.target.value);
+                setRecord(undefined);
+                setRemarks("");
+              }}
+              className="h-11 w-full rounded-lg border border-slate-200 px-3 text-sm"
+              disabled={isPending}
+            >
+              {employees.map((employee) => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.employeeName} ({employee.employeeCode})
+                </option>
+              ))}
+            </select>
+          </div>
         )}
 
-        <Textarea
-          value={remarks}
-          onChange={(event) => setRemarks(event.target.value)}
-          placeholder="Remarks"
-          className="min-h-24"
-          disabled={!canMarkAttendance || hasCheckedOut}
-        />
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
+            <NotebookPen className="size-4 text-cyan-700" />
+            Remarks
+          </div>
+          <Textarea
+            value={remarks}
+            onChange={(event) => setRemarks(event.target.value)}
+            placeholder="Add shift notes, late arrival context, or any attendance remarks"
+            className="min-h-24 border-slate-200 bg-white"
+            disabled={!canMarkAttendance || hasCheckedOut}
+          />
+        </div>
 
         {!selectedEmployeeId && (
           <p className="text-sm text-rose-600">
@@ -147,7 +165,7 @@ export function AttendanceMarkPanel({
         <Button
           onClick={mark}
           disabled={!canMarkAttendance || isPending || hasCheckedOut}
-          className="h-10 bg-blue-600 px-4 hover:bg-blue-700"
+          className="h-11 bg-cyan-600 px-4 hover:bg-cyan-700"
         >
           {hasCheckedIn ? <LogOut /> : <LogIn />}
           {hasCheckedIn ? "Check Out" : "Check In"}

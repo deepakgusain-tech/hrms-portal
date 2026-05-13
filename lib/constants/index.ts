@@ -107,6 +107,10 @@ export const employeeDocumentDefaultValues = {
   experienceEntries: [],
 
   // ---------------- COMMON ----------------
+  reviewStatus: "PENDING",
+  reviewRemark: "",
+  reviewedById: "",
+  reviewedAt: "",
   remark: "",
   status: Status.ACTIVE,
 };
@@ -172,5 +176,6 @@ export const projectDefaultValues = {
 export const projectMemberDefaultValues = {
   projectId: "",
   employeeId: "",
+  employeeIds: [],
   assignedAt: "",
 }

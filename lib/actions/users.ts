@@ -156,6 +156,7 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
           { username: normalizedUser.username },
           { email: normalizedUser.username },
         ],
+        status: "ACTIVE",
       },
       include: {
         role: {
@@ -166,28 +167,44 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
       },
     });
 
-    const existingEmployee = !existingUser
+    const userMatched =
+      !!existingUser?.password &&
+      (await bcrypt.compare(normalizedUser.password, existingUser.password));
+
+    const existingEmployee = !userMatched
       ? await prisma.employeeProfile.findFirst({
           where: {
             email: normalizedUser.username,
+            status: "ACTIVE",
           },
           select: {
             id: true,
+            password: true,
           },
         })
       : null;
 
+    const employeeMatched =
+      !!existingEmployee?.password &&
+      (await bcrypt.compare(normalizedUser.password, existingEmployee.password));
+
     const existingEmployer =
-      !existingUser && !existingEmployee
+      !userMatched && !employeeMatched
         ? await prisma.employer.findFirst({
             where: {
               email: normalizedUser.username,
+              status: "ACTIVE",
             },
             select: {
               id: true,
+              password: true,
             },
           })
         : null;
+
+    const employerMatched =
+      !!existingEmployer?.password &&
+      (await bcrypt.compare(normalizedUser.password, existingEmployer.password));
 
     await signIn("credentials", { ...normalizedUser, redirect: false });
     
@@ -195,11 +212,11 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
       success: true,
       message: "Login successfully",
       redirectTo:
-        existingUser?.role?.name?.toLowerCase() === "employee"
+        userMatched && existingUser?.role?.name?.toLowerCase() === "employee"
           ? "/employee-dashboard"
-          : existingEmployee
+          : employeeMatched
             ? "/employee-dashboard"
-            : existingEmployer
+            : employerMatched
               ? "/dashboard"
           : "/dashboard",
     };

@@ -55,6 +55,10 @@ export async function getConfiguration(): Promise<Configuration | null> {
     favicon: configuration.favicon ?? undefined,
     email: configuration.email ?? undefined,
     password: configuration.password ?? undefined,
+    smtpHost: configuration.smtpHost ?? undefined,
+    smtpPort: configuration.smtpPort ?? undefined,
+    smtpSecure: configuration.smtpSecure,
+    smtpFromName: configuration.smtpFromName ?? undefined,
   };
 }
 
@@ -84,6 +88,12 @@ export async function createOrUpdateConfiguration(
       name: getStringValue(formData, "name") || undefined,
       email: getStringValue(formData, "email") || undefined,
       password: getStringValue(formData, "password") || undefined,
+      smtpHost: getStringValue(formData, "smtpHost") || undefined,
+      smtpPort: getStringValue(formData, "smtpPort")
+        ? Number(getStringValue(formData, "smtpPort"))
+        : undefined,
+      smtpSecure: getStringValue(formData, "smtpSecure") !== "false",
+      smtpFromName: getStringValue(formData, "smtpFromName") || undefined,
       logo: nextLogo,
       favicon: nextFavicon,
     } satisfies Configuration);
@@ -111,6 +121,10 @@ export async function createOrUpdateConfiguration(
       name: parsedConfiguration.name,
       email: parsedConfiguration.email,
       password: parsedConfiguration.password,
+      smtpHost: parsedConfiguration.smtpHost,
+      smtpPort: parsedConfiguration.smtpPort,
+      smtpSecure: parsedConfiguration.smtpSecure ?? true,
+      smtpFromName: parsedConfiguration.smtpFromName,
       logo: logoUrl,
       favicon: faviconUrl,
     };

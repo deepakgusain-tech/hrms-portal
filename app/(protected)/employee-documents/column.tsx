@@ -2,17 +2,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmployeeDocument } from "@/types";
 import { ColumnDef } from "@tanstack/react-table";
-import { EditIcon, Trash } from "lucide-react";
+import { Eye, EditIcon, Trash } from "lucide-react";
 import Link from "next/link";
 
 export const getEmployeeDocumentColumns = ({
   canEdit,
   canDelete,
+  canReview,
   onDelete,
+  onView,
 }: {
   canEdit: boolean;
   canDelete: boolean;
+  canReview: boolean;
   onDelete: (id: string) => void;
+  onView: (document: EmployeeDocument) => void;
 }): ColumnDef<EmployeeDocument>[] => {
   const columns: ColumnDef<EmployeeDocument>[] = [
     {
@@ -37,18 +41,25 @@ export const getEmployeeDocumentColumns = ({
       header: "PAN Number",
     },
     {
-      accessorKey: "status",
-      header: "Status",
+      accessorKey: "reviewStatus",
+      header: "Review",
       cell: ({ row }) =>
-        row.original.status === "ACTIVE" ? (
-          <Badge className="bg-green-500">ACTIVE</Badge>
+        row.original.reviewStatus === "APPROVED" ? (
+          <Badge className="bg-emerald-500">APPROVED</Badge>
+        ) : row.original.reviewStatus === "REJECTED" ? (
+          <Badge variant="destructive">REJECTED</Badge>
         ) : (
-          <Badge variant="destructive">INACTIVE</Badge>
+          <Badge className="bg-amber-500">PENDING</Badge>
         ),
+    },
+    {
+      accessorKey: "reviewRemark",
+      header: "Review Remark",
+      cell: ({ row }) => row.original.reviewRemark || "-",
     },
   ];
 
-  if (canEdit || canDelete) {
+  if (canEdit || canDelete || canReview) {
     columns.push({
       id: "actions",
       header: "Action",
@@ -56,7 +67,20 @@ export const getEmployeeDocumentColumns = ({
         const id = row.original.id as string;
 
         return (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => onView(row.original)}
+              title="View document"
+            >
+              <Eye size={16} />
+            </Button>
+
+            {canReview && row.original.reviewStatus === "PENDING" && (
+              <Badge className="bg-amber-100 text-amber-700">Review open</Badge>
+            )}
+
             {canEdit && (
               <Button
                 asChild

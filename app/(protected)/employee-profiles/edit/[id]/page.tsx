@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getEmployeeProfileById } from "@/lib/actions/employee-profiles";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { canAccess } from "@/lib/rbac";
 import { EmployeeProfile } from "@/types";
 import Link from "next/link";
@@ -19,7 +20,11 @@ const EmployeeProfileEditPage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const route = "/employee-profiles";
-  const canEdit = await canAccess(route, "edit");
+  const [canEditByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "edit"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canEdit = canEditByRole || isHrEmployee;
 
   if (!canEdit) {
     redirect("/404");

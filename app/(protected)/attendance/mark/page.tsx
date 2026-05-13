@@ -30,14 +30,21 @@ export default async function MarkAttendancePage() {
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">
-          My Check In
-        </h1>
-        <p className="text-sm text-slate-500">
-          Record your own check-in and check-out for the current day.
-        </p>
-      </div>
+      <section className="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-r from-sky-50 via-white to-cyan-50 shadow-sm">
+        <div className="grid gap-4 p-5 md:p-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
+              Attendance Action
+            </p>
+            <h1 className="mt-3 text-2xl font-semibold text-slate-900 md:text-3xl">
+              My Check In
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Record your own check-in and check-out for the current day.
+            </p>
+          </div>
+        </div>
+      </section>
       <AttendanceMarkPanel
         employeeId={employeeId}
         todayRecord={todayRecord}

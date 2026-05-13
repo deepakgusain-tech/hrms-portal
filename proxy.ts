@@ -4,8 +4,14 @@ import { auth } from "@/auth";
 
 const employeeAllowedPaths = [
   "/employee-dashboard",
+  "/employee-profiles",
+  "/department",
+  "/job-roles",
+  "/work-location",
   "/employee-documents",
   "/attendance",
+  "/leave-requests",
+  "/transfer-promotion",
 ];
 
 type AuthenticatedRequest = {
@@ -34,8 +40,10 @@ export default auth((req: AuthenticatedRequest) => {
     pathname.startsWith("/employee-profiles") ||
     pathname.startsWith("/employee-documents") ||
     pathname.startsWith("/department") ||
+    pathname.startsWith("/job-roles") ||
     pathname.startsWith("/work-location") ||
     pathname.startsWith("/transfer-promotion") ||
+    pathname.startsWith("/leave-requests") ||
     pathname.startsWith("/attendance");
 
   if (!isProtectedRoute) {
@@ -53,6 +61,13 @@ export default auth((req: AuthenticatedRequest) => {
     return NextResponse.redirect(new URL("/employee-dashboard", req.url));
   }
 
+  if (
+    req.auth.user.role?.toLowerCase() === "employer" &&
+    pathname !== "/dashboard"
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
   return NextResponse.next();
 });
 
@@ -68,8 +83,10 @@ export const config = {
     "/employee-profiles/:path*",
     "/employee-documents/:path*",
     "/department/:path*",
+    "/job-roles/:path*",
     "/work-location/:path*",
     "/transfer-promotion/:path*",
+    "/leave-requests/:path*",
     "/attendance/:path*",
   ],
 };

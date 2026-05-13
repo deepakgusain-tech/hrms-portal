@@ -11,8 +11,7 @@ import {
 } from "@/components/ui/card";
 import { canAccess } from "@/lib/rbac";
 import ProjectForm from "@/components/project/project-form";
-import { getUsers } from "@/lib/actions/users";
-import { User } from "@/types";
+import { getEmployeeProfileSelectOptions } from "@/lib/actions/employee-profiles";
 
 const ProjectCreatePage = async () => {
   const route = "/projects";
@@ -22,7 +21,7 @@ const ProjectCreatePage = async () => {
     redirect("/404");
   }
 
-  const users = await getUsers();
+  const employees = await getEmployeeProfileSelectOptions();
 
   return (
     <Card className="rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
@@ -56,7 +55,10 @@ const ProjectCreatePage = async () => {
       </CardHeader>
 
       <CardContent className="pt-6">
-        <ProjectForm update={false} users={users as User[]} />
+        <ProjectForm
+          update={false}
+          employees={employees}
+        />
       </CardContent>
     </Card>
   );

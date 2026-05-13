@@ -22,6 +22,12 @@ enum ExperienceType {
   EXPERIENCED
 }
 
+enum DocumentReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum ProjectStatus {
   PLANNING
   ACTIVE
@@ -57,21 +63,25 @@ model Role {
 }
 
 model User {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  username  String   @unique
-  password  String
-  firstName String
-  lastName  String
-  email     String   @unique
-  status    Status   @default(ACTIVE)
-  remark    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  roleId    String   @db.Uuid
-  role      Role     @relation(fields: [roleId], references: [id])
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username            String    @unique
+  password            String
+  firstName           String
+  lastName            String
+  email               String    @unique
+  status              Status    @default(ACTIVE)
+  remark              String?
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  roleId              String    @db.Uuid
+  role                Role      @relation(fields: [roleId], references: [id])
 
-  projects              Project[]
   reviewedLeaveRequests LeaveRequest[]
+  reviewedEmployeeDocuments EmployeeDocument[]
+
+  @@index([resetTokenHash])
 }
 
 model Company {
@@ -92,21 +102,25 @@ model Company {
 }
 
 model Employer {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId    String   @db.Uuid
-  employerName String
-  employerCode String   @unique
-  email        String   @unique
-  phone        String
-  password     String
-  designation  String?
-  address      String?
-  remark       String?
-  status       Status   @default(ACTIVE)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId           String    @db.Uuid
+  employerName        String
+  employerCode        String    @unique
+  email               String    @unique
+  phone               String
+  password            String
+  designation         String?
+  address             String?
+  remark              String?
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
+  status              Status    @default(ACTIVE)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([resetTokenHash])
 }
 
 model JobRole {
@@ -193,21 +207,28 @@ model EmployeeDocument {
   experienceEntries Json?
 
   // ---------------- COMMON ----------------
+  reviewStatus DocumentReviewStatus @default(PENDING)
+  reviewRemark String?
+  reviewedById String? @db.Uuid
+  reviewedAt   DateTime?
   remark    String?
   status    Status   @default(ACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   employee EmployeeProfile @relation(fields: [employeeId], references: [id])
+  reviewedBy User? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
 }
 
 model EmployeeProfile {
-  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  managerId    String? @db.Uuid
-  employeeName String
-  employeeCode String  @unique
-  email        String  @unique
-  password     String?
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  managerId           String?   @db.Uuid
+  employeeName        String
+  employeeCode        String    @unique
+  email               String    @unique
+  password            String?
+  resetTokenHash      String?
+  resetTokenExpiresAt DateTime?
 
   companyId String? @db.Uuid
 
@@ -238,13 +259,20 @@ model EmployeeProfile {
 
   employeeDocuments  EmployeeDocument[]
   transferPromotions TransferPromotion[]
+  createdProjects    Project[]
   projectMembers     ProjectMember[]
   tasks              Task[]
   taskComments       TaskComment[]
+  taskSubmissions    TaskSubmission[]
   attendances        Attendance[]
   leaveRequests      LeaveRequest[]
+  eodReports         EodReport[]
+  reviewedEodReports EodReport[]      @relation("EodReviewedByManager")
+  monthlyEodReviews  MonthlyEodReview[]
+  managedMonthlyEodReviews MonthlyEodReview[] @relation("MonthlyEodReviewedByManager")
 
   @@index([managerId])
+  @@index([resetTokenHash])
 }
 
 model Module {
@@ -277,12 +305,16 @@ model RoleModule {
 }
 
 model Configuration {
-  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name     String?
-  logo     String?
-  favicon  String?
-  email    String?
-  password String?
+  id           String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String?
+  logo         String?
+  favicon      String?
+  email        String?
+  password     String?
+  smtpHost     String?
+  smtpPort     Int?
+  smtpSecure   Boolean @default(true)
+  smtpFromName String?
 }
 
 model Project {
@@ -297,7 +329,7 @@ model Project {
 
   createdById String @db.Uuid
 
-  createdBy User @relation(fields: [createdById], references: [id])
+  createdBy EmployeeProfile @relation(fields: [createdById], references: [id])
 
   members ProjectMember[]
   tasks   Task[]
@@ -340,7 +372,8 @@ model Task {
 
   assignedTo EmployeeProfile? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
 
-  comments TaskComment[]
+  comments    TaskComment[]
+  submissions TaskSubmission[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -366,6 +399,28 @@ model TaskComment {
   @@index([employeeId])
 }
 
+model TaskSubmission {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId     String @db.Uuid
+  employeeId String @db.Uuid
+
+  workDate    DateTime @db.Date
+  summary     String
+  reviewStatus String @default("PENDING")
+  reviewerTag  String
+  reviewRemark String?
+  reviewedAt   DateTime?
+
+  task     Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  employee EmployeeProfile @relation(fields: [employeeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([employeeId])
+}
+
 model Attendance {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   employeeId String   @db.Uuid
@@ -386,10 +441,57 @@ model Attendance {
   updatedAt DateTime @updatedAt
 
   employee EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  eodReports EodReport[]
 
   @@unique([employeeId, date])
   @@index([date])
   @@index([employeeId])
+}
+
+model EodReport {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId          String            @db.Uuid
+  attendanceId        String?           @db.Uuid
+  reportDate          DateTime          @db.Date
+  linkedTaskIds       Json?
+  accomplishments     String
+  plans               String?
+  blockers            String?
+  managerStatus       EodApprovalStatus @default(PENDING)
+  managerRemark       String?
+  reviewedByManagerId String?           @db.Uuid
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  employee          EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  attendance        Attendance?      @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+  reviewedByManager EmployeeProfile? @relation("EodReviewedByManager", fields: [reviewedByManagerId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, reportDate])
+  @@index([reportDate])
+  @@index([managerStatus])
+}
+
+model MonthlyEodReview {
+  id                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId          String            @db.Uuid
+  year                Int
+  month               Int
+  managerStatus       EodApprovalStatus @default(PENDING)
+  managerRemark       String?
+  reviewedByManagerId String?           @db.Uuid
+  hrStatus            EodApprovalStatus @default(PENDING)
+  hrRemark            String?
+  reviewedByHrEmail   String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  employee          EmployeeProfile  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewedByManager EmployeeProfile? @relation("MonthlyEodReviewedByManager", fields: [reviewedByManagerId], references: [id], onDelete: SetNull)
+
+  @@unique([employeeId, year, month])
+  @@index([year, month])
+  @@index([managerStatus, hrStatus])
 }
 
 enum AttendanceStatus {
@@ -413,6 +515,12 @@ enum LeaveRequestStatus {
   APPROVED
   REJECTED
   CANCELLED
+}
+
+enum EodApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model LeaveRequest {

@@ -18,7 +18,12 @@ export async function getProjects() {
         createdAt: "desc",
       },
       include: {
-        createdBy: true
+        createdBy: true,
+        members: {
+          include: {
+            employee: true,
+          },
+        },
       }
     });
 
@@ -44,7 +49,6 @@ export async function createProject(data: Project): Promise<ActionResponse> {
         }
       }
     });
-    console.log(data);
 
     revalidatePath("/projects");
 

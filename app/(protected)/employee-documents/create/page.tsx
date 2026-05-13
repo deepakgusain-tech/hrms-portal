@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getCurrentEmployeeDocumentOwner } from "@/lib/actions/employee-documents";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { canAccess } from "@/lib/rbac";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -18,13 +19,19 @@ const EmployeeDocumentCreatePage = async ({
   searchParams: Promise<{ from?: string | string[] }>;
 }) => {
   const route = "/employee-documents";
-  const canCreate = await canAccess(route, "create");
+  const [canCreateByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "create"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canCreate = canCreateByRole || isHrEmployee;
 
   if (!canCreate) {
     redirect("/404");
   }
 
-  const currentEmployee = await getCurrentEmployeeDocumentOwner();
+  const currentEmployee = isHrEmployee
+    ? null
+    : await getCurrentEmployeeDocumentOwner();
   const { from } = await searchParams;
   const openedFromDashboard = from === "employee-dashboard";
   const backHref = openedFromDashboard ? "/employee-dashboard" : "/employee-documents";

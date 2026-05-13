@@ -5,9 +5,12 @@ import {
   ProjectStatus,
   TaskStatus,
   Priority,
-  AttendanceStatus
+  AttendanceStatus,
 } from "@prisma/client";
 import { z } from "zod";
+import { DOCUMENT_REVIEW_STATUSES } from "./document-review";
+
+const EOD_APPROVAL_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
 
 /* ---------------- AUTH ---------------- */
 export const loginFormSchema = z.object({
@@ -138,6 +141,10 @@ export const employeeDocumentSchema = z
       .optional(),
 
     // ---------------- COMMON ----------------
+    reviewStatus: z.enum(DOCUMENT_REVIEW_STATUSES).optional(),
+    reviewRemark: z.string().optional(),
+    reviewedById: z.string().optional(),
+    reviewedAt: z.string().nullable().optional(),
     remark: z.string().optional(),
     status: z.nativeEnum(Status),
     createdAt: z.string().nullable().optional(),
@@ -289,8 +296,12 @@ export const configurationSchema = z.object({
   name: z.string().optional(),
   logo: z.any().optional(),
   favicon: z.any().optional(),
-  email: z.string().optional(),
+  email: z.union([z.string().email("Invalid email address"), z.literal("")]).optional(),
   password: z.string().optional(),
+  smtpHost: z.string().optional(),
+  smtpPort: z.number().int().positive().optional(),
+  smtpSecure: z.boolean().optional(),
+  smtpFromName: z.string().optional(),
 });
 
 /* ---------------- PROJECT ---------------- */
@@ -307,14 +318,27 @@ export const projectSchema = z.object({
 });
 
 /* ---------------- PROJECT MEMBER ---------------- */
-export const projectMemberSchema = z.object({
-  id: z.string().optional(),
-  projectId: z.string().min(1, "Project is required"),
-  employeeId: z.string().min(1, "Employee is required"),
-  assignedAt: z.union([z.date().optional(), z.string().nullable()]),
-  createdAt: z.string().nullable().optional(),
-  updatedAt: z.string().nullable().optional(),
-});
+export const projectMemberSchema = z
+  .object({
+    id: z.string().optional(),
+    projectId: z.string().min(1, "Project is required"),
+    employeeId: z.string().optional(),
+    employeeIds: z.array(z.string()).optional(),
+    assignedAt: z.union([z.date().optional(), z.string().nullable()]),
+    createdAt: z.string().nullable().optional(),
+    updatedAt: z.string().nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.employeeId || data.employeeIds?.length) {
+      return;
+    }
+
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "At least one employee is required",
+      path: ["employeeIds"],
+    });
+  });
 
 /* ---------------- TASK ---------------- */
 export const taskSchema = z.object({
@@ -356,6 +380,36 @@ export const attendanceSchema = z.object({
   isLate: z.boolean().optional(),
   isHalfDay: z.boolean().optional(),
   remarks: z.string().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
+/* ---------------- EOD REPORTING ---------------- */
+export const eodReportSchema = z.object({
+  id: z.string().optional(),
+  employeeId: z.string().optional(),
+  reportDate: z.string().min(1, "Report date is required"),
+  linkedTaskIds: z.array(z.string()).optional(),
+  accomplishments: z.string().trim().min(1, "Accomplishments are required"),
+  plans: z.string().optional(),
+  blockers: z.string().optional(),
+  managerStatus: z.enum(EOD_APPROVAL_STATUSES).optional(),
+  managerRemark: z.string().optional(),
+  reviewedByManagerId: z.string().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
+export const monthlyEodReviewSchema = z.object({
+  id: z.string().optional(),
+  employeeId: z.string().min(1, "Employee is required"),
+  year: z.coerce.number().int().min(2000),
+  month: z.coerce.number().int().min(1).max(12),
+  managerStatus: z.enum(EOD_APPROVAL_STATUSES).optional(),
+  managerRemark: z.string().optional(),
+  hrStatus: z.enum(EOD_APPROVAL_STATUSES).optional(),
+  hrRemark: z.string().optional(),
+  reviewedByHrEmail: z.string().optional(),
   createdAt: z.string().nullable().optional(),
   updatedAt: z.string().nullable().optional(),
 });

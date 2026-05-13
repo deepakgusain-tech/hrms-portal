@@ -1,6 +1,7 @@
 "use client";
 import { loginFormUser } from '@/lib/actions/users';
 import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { SubmitEvent, useActionState, useEffect, useState } from 'react'
 
@@ -67,7 +68,15 @@ const LoginForm = () => {
             </div>
 
             <div>
-                <label className="text-sm text-gray-700">Password</label>
+                <div className="flex items-center justify-between">
+                    <label className="text-sm text-gray-700">Password</label>
+                    <Link
+                        href="/forgot-password"
+                        className="text-sm text-blue-600 underline-offset-2 hover:underline"
+                    >
+                        Forgot password?
+                    </Link>
+                </div>
 
                 <div className="relative mt-1">
                     <input

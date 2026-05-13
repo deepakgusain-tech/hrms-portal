@@ -4,6 +4,7 @@ import { ArrowLeft, Pencil } from "lucide-react";
 
 import DepartmentForm from "@/components/department/department-form";
 import { getDepartmentById } from "@/lib/actions/department";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { canAccess } from "@/lib/rbac";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +20,11 @@ const DepartmentEditPage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const route = "/department";
-  const canEdit = await canAccess(route, "edit");
+  const [canEditByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "edit"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canEdit = canEditByRole || isHrEmployee;
 
   if (!canEdit) {
     redirect("/404");

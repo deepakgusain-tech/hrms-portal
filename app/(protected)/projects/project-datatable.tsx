@@ -4,12 +4,11 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { DataTable } from "@/components/datatable/DataTable";
-import { Project } from "@/types";
-import { getProjectColumns } from "./column";
+import { getProjectColumns, ProjectRow } from "./column";
 import { deleteProject } from "@/lib/actions/projects";
 
 type ProjectDataTableProps = {
-  data: any;
+  data: ProjectRow[];
   canEdit: boolean;
   canDelete: boolean;
   title: string;
@@ -23,7 +22,7 @@ export default function ProjectDataTable({
   title,
   actions,
 }: ProjectDataTableProps) {
-  const [tableData, setTableData] = React.useState<Project[]>(data);
+  const [tableData, setTableData] = React.useState<ProjectRow[]>(data);
 
   const deleteHandler = async (id: string) => {
     const res = await deleteProject(id);

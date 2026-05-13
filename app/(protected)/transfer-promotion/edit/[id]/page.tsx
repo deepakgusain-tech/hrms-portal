@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getTransferPromotionById } from "@/lib/actions/transfer-promotion";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { canAccess } from "@/lib/rbac";
 import { TransferPromotion } from "@/types";
 import Link from "next/link";
@@ -19,7 +20,11 @@ const TransferPromotionEditPage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const route = "/transfer-promotion";
-  const canEdit = await canAccess(route, "edit");
+  const [canEditByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "edit"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canEdit = canEditByRole || isHrEmployee;
 
   if (!canEdit) {
     redirect("/404");

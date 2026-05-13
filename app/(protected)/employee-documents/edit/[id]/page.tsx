@@ -10,6 +10,7 @@ import {
   getCurrentEmployeeDocumentOwner,
   getEmployeeDocumentById,
 } from "@/lib/actions/employee-documents";
+import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { canAccess } from "@/lib/rbac";
 import { EmployeeDocument } from "@/types";
 import Link from "next/link";
@@ -22,7 +23,11 @@ const EmployeeDocumentEditPage = async ({
   params: Promise<{ id: string }>;
 }) => {
   const route = "/employee-documents";
-  const canEdit = await canAccess(route, "edit");
+  const [canEditByRole, isHrEmployee] = await Promise.all([
+    canAccess(route, "edit"),
+    isCurrentEmployeeHr(),
+  ]);
+  const canEdit = canEditByRole || isHrEmployee;
 
   if (!canEdit) {
     redirect("/404");
@@ -35,7 +40,9 @@ const EmployeeDocumentEditPage = async ({
     notFound();
   }
 
-  const currentEmployee = await getCurrentEmployeeDocumentOwner();
+  const currentEmployee = isHrEmployee
+    ? null
+    : await getCurrentEmployeeDocumentOwner();
 
   return (
     <Card className="rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">

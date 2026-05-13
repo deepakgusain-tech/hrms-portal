@@ -7,6 +7,10 @@ import {
 } from "@/components/ui/sidebar";
 import { redirect } from "next/navigation";
 import { getConfiguration } from "@/lib/actions/configuration";
+import {
+  getCurrentEmployeeProfileForPortal,
+  isCurrentEmployeeManager,
+} from "@/lib/employee-job-role";
 import { getAccessibleRoutes } from "@/lib/rbac";
 
 export default async function ProtectedLayout({
@@ -22,6 +26,8 @@ export default async function ProtectedLayout({
 
   const config = await getConfiguration();
   const accessibleRoutes = await getAccessibleRoutes();
+  const employeeProfile = await getCurrentEmployeeProfileForPortal();
+  const isManager = await isCurrentEmployeeManager();
 
   const sidebarUser = {
     name:
@@ -38,6 +44,8 @@ export default async function ProtectedLayout({
       <AppSidebar
         user={sidebarUser}
         role={session.user.role}
+        jobRole={employeeProfile?.jobRole?.name || session.user.jobRole}
+        isManager={isManager}
         config={config || undefined}
         accessibleRoutes={accessibleRoutes}
       />

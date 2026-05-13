@@ -62,6 +62,11 @@
         route: "/department",
       },
       {
+        name: "Job Roles",
+        description: "Job Role Module",
+        route: "/job-roles",
+      },
+      {
         name: "Work Location",
         description: "Work Location Module",
         route: "/work-location",
@@ -85,6 +90,11 @@
         name: "Leave Requests",
         description: "Leave Request Management Module",
         route: "/leave-requests",
+      },
+      {
+        name: "EOD Reporting",
+        description: "End of Day Reporting and Payroll Review Module",
+        route: "/eod-reporting",
       },
       { name: "Project Creation", description: "Project Creation Module", route: "/projects" },
       { name: "Project Members", description: "Project Members Module", route: "/project-members" },
@@ -188,20 +198,20 @@
         },
         update: {
           canView:
-            mod.route === "/attendance" || mod.route === "/leave-requests",
+            mod.route === "/attendance" || mod.route === "/leave-requests" || mod.route === "/eod-reporting",
           canCreate:
-            mod.route === "/attendance" || mod.route === "/leave-requests",
-          canEdit: mod.route === "/attendance",
+            mod.route === "/attendance" || mod.route === "/leave-requests" || mod.route === "/eod-reporting",
+          canEdit: mod.route === "/attendance" || mod.route === "/eod-reporting",
           canDelete: false,
         },
         create: {
           roleId: employeeRole.id,
           moduleId: mod.id,
           canView:
-            mod.route === "/attendance" || mod.route === "/leave-requests",
+            mod.route === "/attendance" || mod.route === "/leave-requests" || mod.route === "/eod-reporting",
           canCreate:
-            mod.route === "/attendance" || mod.route === "/leave-requests",
-          canEdit: mod.route === "/attendance",
+            mod.route === "/attendance" || mod.route === "/leave-requests" || mod.route === "/eod-reporting",
+          canEdit: mod.route === "/attendance" || mod.route === "/eod-reporting",
           canDelete: false,
         },
       });

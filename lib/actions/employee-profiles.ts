@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import { Prisma, Status } from "@prisma/client";
 import { EmployeeProfile } from "@/types";
 import bcrypt from "bcrypt";
 import { revalidatePath } from "next/cache";
@@ -93,6 +93,8 @@ function mapEmployeeProfile(record: EmployeeProfileRecord): EmployeeProfile {
     jobRoleName: record.jobRole?.name ?? "",
     managerName: record.manager?.employeeName ?? "",
     workLocationName: record.workLocation?.name ?? "",
+    projectNames:
+      record.projectMembers?.map((member) => member.project.name) ?? [],
   };
 }
 
@@ -121,6 +123,15 @@ const employeeProfileInclude = {
   workLocation: {
     select: {
       name: true,
+    },
+  },
+  projectMembers: {
+    include: {
+      project: {
+        select: {
+          name: true,
+        },
+      },
     },
   },
 };
@@ -227,7 +238,7 @@ export async function getFilteredEmployeeProfiles(
   filters: EmployeeFilters = {},
 ): Promise<EmployeeProfile[]> {
   try {
-    const where: any = {};
+    const where: Prisma.EmployeeProfileWhereInput = {};
 
     if (filters.employeeId) {
       where.employeeCode = {
@@ -292,8 +303,12 @@ export async function getFilteredEmployeeProfiles(
       where.workLocationId = filters.workLocationId;
     }
 
-    if (filters.status && filters.status !== "ALL") {
-      where.status = filters.status;
+    if (
+      filters.status &&
+      filters.status !== "ALL" &&
+      Object.values(Status).includes(filters.status as Status)
+    ) {
+      where.status = filters.status as Status;
     }
 
     if (filters.joiningDateFrom || filters.joiningDateTo) {
@@ -312,7 +327,6 @@ export async function getFilteredEmployeeProfiles(
       orderBy: { createdAt: "desc" },
       include: {
         ...employeeProfileInclude,
-        projectMembers: true,
       },
     });
 
@@ -372,13 +386,6 @@ export async function createEmployeeProfile(
           status: record.status,
         },
       });
-
-      if (hashedPassword) {
-        await tx.user.updateMany({
-          where: { email: record.email },
-          data: { password: hashedPassword },
-        });
-      }
     });
 
     revalidatePath("/employee-profiles");
@@ -445,7 +452,7 @@ export async function updateEmployeeProfile(
 
     const existingRecord = await prisma.employeeProfile.findUnique({
       where: { id },
-      select: { employeeCode: true, email: true },
+      select: { employeeCode: true },
     });
 
     if (!existingRecord) {
@@ -483,13 +490,6 @@ export async function updateEmployeeProfile(
         },
       });
 
-      await tx.user.updateMany({
-        where: { email: existingRecord.email },
-        data: {
-          email: record.email,
-          ...(hashedPassword ? { password: hashedPassword } : {}),
-        },
-      });
     });
 
     revalidatePath("/employee-profiles");

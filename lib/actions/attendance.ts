@@ -9,6 +9,7 @@ import {
   canManageAllAttendance,
   getRoutePermissions,
 } from "@/lib/rbac";
+import { isHrJobRoleName } from "@/lib/employee-job-role";
 import { formatError } from "@/lib/utils";
 
 const ATTENDANCE_ROUTE = "/attendance";
@@ -199,24 +200,18 @@ async function getCurrentUser() {
     throw new Error("Unauthorized");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      role: true,
-    },
-  });
-
-  if (!user) {
-    if (session.user.role?.toLowerCase() !== "employee") {
-      throw new Error("Unauthorized");
-    }
-
+  if (session.user.role?.toLowerCase() === "employee") {
     const employeeProfile = await prisma.employeeProfile.findFirst({
       where: { email: session.user.email },
       select: {
         id: true,
         employeeName: true,
         departmentId: true,
+        jobRole: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
 
@@ -228,10 +223,23 @@ async function getCurrentUser() {
       id: session.user.id,
       email: session.user.email,
       role: {
-        name: "employee",
+        name: isHrJobRoleName(employeeProfile.jobRole?.name)
+          ? "HR"
+          : "employee",
       },
       employeeProfile,
     };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+    include: {
+      role: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("Unauthorized");
   }
 
   const employeeProfile = await prisma.employeeProfile.findFirst({
@@ -254,13 +262,14 @@ async function requireAttendancePermission(
 ) {
   const currentUser = await getCurrentUser();
   const permissions = await getRoutePermissions(ATTENDANCE_ROUTE);
+  const canManageFromJobRole = canManageAllAttendance(currentUser.role?.name);
   const allowed =
     action === "view"
-      ? permissions.canView
+      ? permissions.canView || canManageFromJobRole
       : action === "create"
-        ? permissions.canCreate
+        ? permissions.canCreate || canManageFromJobRole
         : action === "edit"
-          ? permissions.canEdit
+          ? permissions.canEdit || canManageFromJobRole
           : permissions.canDelete;
 
   if (!allowed) {

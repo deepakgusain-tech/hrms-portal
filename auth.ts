@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as NextAuthModule from "next-auth";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./lib/prisma";
@@ -12,6 +13,7 @@ async function authorizeCredentials(username: string, password: string) {
   const user = await prisma.user.findFirst({
     where: {
       OR: [{ username: identifier }, { email: identifier }],
+      status: "ACTIVE",
     },
     include: {
       role: true,
@@ -29,6 +31,7 @@ async function authorizeCredentials(username: string, password: string) {
         lastName: user.lastName ?? "",
         email: user.email ?? "",
         role: user.role?.name ?? "USER",
+        accountType: "user",
       };
     }
   }
@@ -36,6 +39,14 @@ async function authorizeCredentials(username: string, password: string) {
   const employee = await prisma.employeeProfile.findFirst({
     where: {
       email: identifier,
+      status: "ACTIVE",
+    },
+    include: {
+      jobRole: {
+        select: {
+          name: true,
+        },
+      },
     },
   });
 
@@ -43,7 +54,9 @@ async function authorizeCredentials(username: string, password: string) {
     const isMatched = await bcrypt.compare(password, employee.password);
 
     if (isMatched) {
-      const [firstName = "", ...rest] = employee.employeeName.trim().split(/\s+/);
+      const [firstName = "", ...rest] = employee.employeeName
+        .trim()
+        .split(/\s+/);
 
       return {
         id: employee.id,
@@ -52,6 +65,8 @@ async function authorizeCredentials(username: string, password: string) {
         lastName: rest.join(" "),
         email: employee.email ?? "",
         role: "employee",
+        accountType: "employee",
+        jobRole: employee.jobRole?.name ?? "",
       };
     }
   }
@@ -59,6 +74,7 @@ async function authorizeCredentials(username: string, password: string) {
   const employer = await prisma.employer.findFirst({
     where: {
       email: identifier,
+      status: "ACTIVE",
     },
   });
 
@@ -66,7 +82,9 @@ async function authorizeCredentials(username: string, password: string) {
     const isMatched = await bcrypt.compare(password, employer.password);
 
     if (isMatched) {
-      const [firstName = "", ...rest] = employer.employerName.trim().split(/\s+/);
+      const [firstName = "", ...rest] = employer.employerName
+        .trim()
+        .split(/\s+/);
 
       return {
         id: employer.id,
@@ -75,6 +93,7 @@ async function authorizeCredentials(username: string, password: string) {
         lastName: rest.join(" "),
         email: employer.email ?? "",
         role: "employer",
+        accountType: "employer",
       };
     }
   }
@@ -122,7 +141,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.firstName = user.firstName;
         token.lastName = user.lastName;
         token.email = user.email;
-        token.role = user.role; // ✅ Important
+        token.role = user.role;
+        token.accountType = user.accountType;
+        token.jobRole = user.jobRole;
       }
 
       return token;
@@ -137,7 +158,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.name =
           `${token.firstName ?? ""} ${token.lastName ?? ""}`.trim();
         session.user.email = token.email;
-        session.user.role = token.role; // ✅ Important
+        session.user.role = token.role;
+        session.user.accountType = token.accountType;
+        session.user.jobRole = token.jobRole;
       }
 
       return session;

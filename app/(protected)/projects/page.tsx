@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 const ProjectPage = async () => {
-  const route = "/project";
+  const route = "/projects";
   const permissions = await getRoutePermissions(route);
 
   if (!permissions.canView) {
