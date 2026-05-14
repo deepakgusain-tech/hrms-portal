@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EmployeeFilters } from "@/lib/actions/employee-profiles";
+import { Funnel, RotateCcw } from "lucide-react";
 
 interface FilterPanelProps {
   companies: Array<{ id: string; companyName: string }>;
@@ -24,8 +25,9 @@ interface FilterPanelProps {
 
 const selectAllValue = "ALL";
 const fieldClass =
-  "h-10 rounded-xl border-slate-200 bg-slate-50 text-sm shadow-none";
-const labelClass = "text-xs font-semibold text-slate-600";
+  "h-11 rounded-[18px] border-slate-200 bg-white text-sm shadow-none transition-all placeholder:text-slate-400 focus-visible:border-cyan-500 focus-visible:ring-4 focus-visible:ring-cyan-500/10";
+const labelClass =
+  "text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500";
 
 export default function FilterPanel({
   companies,
@@ -57,17 +59,39 @@ export default function FilterPanel({
   }, [filters, onApplyFilters]);
 
   return (
-    <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm md:p-6">
-      <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900">Employee Filters</h2>
-          <p className="text-sm text-slate-500">
+    <div className="relative overflow-hidden rounded-[30px] border border-slate-200 bg-white p-5 shadow-[0_24px_60px_-40px_rgba(15,23,42,0.25)] md:p-7">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(236,254,255,0.9),rgba(255,255,255,0))]" />
+
+      <div className="relative mb-7 flex flex-col gap-5 border-b border-slate-100 pb-6 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-4">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] border border-cyan-100 bg-cyan-50 text-cyan-700">
+            <Funnel className="h-5 w-5" />
+          </span>
+          <div className="space-y-1.5">
+              {/* <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-700">
+                Filter workspace
+              </p> */}
+            <h2 className="text-[1.35rem] pt-2 font-semibold tracking-tight text-slate-950">
+              Filter workspace
+            </h2>
+            {/* <p className="max-w-xl text-sm leading-6 text-slate-500">
+              Use only the fields you need to narrow the employee directory.
+            </p> */}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-cyan-100 bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-800">
+            <span className="h-2 w-2 rounded-full bg-cyan-500" />
             {activeFilterCount} active filter{activeFilterCount !== 1 ? "s" : ""}
-          </p>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-600">
+            Live directory
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="relative grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <div className="space-y-1.5">
           <label className={labelClass}>Employee ID</label>
           <Input
@@ -237,18 +261,19 @@ export default function FilterPanel({
           </Select>
         </div>
 
-        <div className="flex gap-2 pt-5 sm:col-span-2 lg:col-span-3 xl:col-span-2">
+        <div className="flex gap-3 pt-4 sm:col-span-2 lg:col-span-3 xl:col-span-2 xl:items-end">
           <Button
             onClick={handleApply}
-            className="h-10 flex-1 rounded-xl bg-blue-600 hover:bg-blue-700"
+            className="h-11 flex-1 rounded-[18px] bg-cyan-700 text-white shadow-[0_16px_28px_-18px_rgba(8,145,178,0.8)] hover:bg-cyan-800"
           >
-            Apply
+            Apply filters
           </Button>
           <Button
             onClick={handleReset}
             variant="outline"
-            className="h-10 flex-1 rounded-xl border-slate-300 bg-white"
+            className="h-11 flex-1 rounded-[18px] border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
           >
+            <RotateCcw className="mr-1 h-4 w-4" />
             Reset
           </Button>
         </div>

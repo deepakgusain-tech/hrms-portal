@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 
 type SidebarUser = {
@@ -70,6 +71,17 @@ type MenuGroup = {
   children?: MenuItem[];
   url?: string;
 };
+
+function getRoleLabel(role?: SidebarRole, jobRole?: SidebarJobRole, isManager?: boolean) {
+  if (role?.toLowerCase() === "employer") return "Employer Portal";
+  if (role?.toLowerCase() === "employee") {
+    if (isHrJobRole(jobRole)) return "HR Workspace";
+    if (isManager || isManagerJobRole(jobRole)) return "Manager Workspace";
+    return "Employee Workspace";
+  }
+
+  return "Operations Console";
+}
 
 const menu: MenuGroup[] = [
   {
@@ -452,48 +464,77 @@ export function AppSidebar({
   const isCollapsed = state === "collapsed";
 
   const pathname = usePathname();
+  const roleLabel = getRoleLabel(role, jobRole, isManager);
 
   return (
     <Sidebar
       collapsible="icon"
-      className="z-100 border-r border-slate-200 shadow-sm"
+      className="z-100 border-r border-white/40 bg-transparent shadow-none"
       {...props}
     >
-      <SidebarHeader className="border-b border-slate-200 px-3 py-3">
+      <div className="pointer-events-none absolute inset-x-2 top-2 h-32 rounded-[1.75rem] bg-gradient-to-br from-cyan-400/20 via-sky-400/10 to-transparent blur-2xl" />
+
+      <SidebarHeader className="relative z-10 border-b border-white/40 px-3 py-3">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="h-auto rounded-lg p-2 transition-all duration-200 hover:bg-white"
+              className={cn(
+                "h-auto rounded-[1.4rem] p-2.5 transition-all duration-200 hover:bg-white/70",
+                isCollapsed && "justify-center p-2"
+              )}
             >
               <Link href={homeHref}>
-                <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={cn(
+                    "flex min-w-0 items-center gap-3",
+                    isCollapsed && "w-full justify-center gap-0"
+                  )}
+                >
                   {showLogo && logoSrc ? (
                     <Image
                       src={logoSrc}
-                      alt="Company Logo"
-                      width={30}
-                      height={30}
-                      className="rounded-lg object-cover shrink-0 border border-slate-200"
+                      alt={companyName}
+                      width={44}
+                      height={44}
+                      className="shrink-0 rounded-2xl border border-white/50 object-cover shadow-sm"
                       onError={() => setFailedLogoSrc(logoSrc)}
                     />
                   ) : (
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cyan-100 bg-cyan-50 text-sm font-semibold text-cyan-700">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20">
                       {companyName.charAt(0).toUpperCase()}
                     </div>
                   )}
 
-                  <span className="truncate text-sm font-semibold tracking-wide text-slate-900 group-data-[collapsible=icon]:hidden">
-                    {companyName}
-                  </span>
+                  <div
+                    className={cn(
+                      "min-w-0 group-data-[collapsible=icon]:hidden",
+                      isCollapsed && "hidden"
+                    )}
+                  >
+                    <span className="block truncate text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700/80">
+                      {roleLabel}
+                    </span>
+                    <span className="block truncate text-sm font-semibold text-slate-900">
+                      {companyName}
+                    </span>
+                  </div>
                 </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+
+       
       </SidebarHeader>
 
-      <SidebarContent className="p-2 space-y-2">
+      <SidebarContent className="relative z-10 space-y-3 p-2">
+        <div className="px-2 pt-1 group-data-[collapsible=icon]:hidden">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+            Navigation
+          </p>
+        </div>
+
         {filteredMenu.map((group) =>
           group.children ? (
             <Switcher key={group.name} menu={group} />
@@ -506,27 +547,47 @@ export function AppSidebar({
                       <SidebarMenuButton
                         asChild
                         size="lg"
-                        className={`
-                        rounded-lg cursor-pointer transition-all duration-200
+                        className={cn(
+                          `
+                        rounded-[1.25rem] cursor-pointer transition-all duration-200
                         ${pathname === group.url
-                            ? "bg-cyan-600 text-white shadow-sm"
-                            : "text-slate-700 hover:bg-white hover:text-slate-900"
+                            ? "bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25"
+                            : "text-slate-700 hover:bg-white/70 hover:text-slate-900"
                           }
-                      `}
+                      `,
+                          isCollapsed && "justify-center px-0"
+                        )}
                       >
-                        <Link href={group.url!}>
+                        <Link
+                          href={group.url!}
+                          className={cn(
+                            "flex w-full items-center gap-3",
+                            isCollapsed && "justify-center gap-0"
+                          )}
+                        >
                           <div
-                            className={`
-                              flex aspect-square size-8 items-center justify-center rounded-lg
+                            className={cn(
+                              `
+                              flex aspect-square size-9 items-center justify-center rounded-2xl
                               ${pathname === group.url
                                 ? "bg-white/20 text-white"
-                                : "border border-slate-200 bg-slate-50 text-cyan-700"
+                                : "border border-white/50 bg-white/55 text-cyan-700"
                               }
-                            `}
+                            `,
+                              isCollapsed && "size-10"
+                            )}
                           >
                             {group.icon}
                           </div>
-                          <span>{group.name}</span>
+                          <div
+                            className={cn(
+                              "flex min-w-0 flex-1 items-center justify-between gap-2",
+                              isCollapsed && "hidden"
+                            )}
+                          >
+                            <span className="truncate">{group.name}</span>
+                            {pathname === group.url ? <span className="h-2 w-2 rounded-full bg-white/80" /> : null}
+                          </div>
                         </Link>
                       </SidebarMenuButton>
                     </TooltipTrigger>
@@ -543,8 +604,8 @@ export function AppSidebar({
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-slate-200 p-2">
-        <div className="rounded-lg bg-white ring-1 ring-slate-200">
+      <SidebarFooter className="relative z-10 border-t border-white/40 p-2">
+        <div className="glass-panel rounded-2xl">
           <NavUser user={navUser} />
         </div>
       </SidebarFooter>

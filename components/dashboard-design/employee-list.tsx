@@ -153,7 +153,7 @@ export default function EmployeeList({
 }: EmployeeListProps) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex h-96 items-center justify-center rounded-[24px] border border-slate-200 bg-white">
         <p className="text-gray-500">Loading employees...</p>
       </div>
     );
@@ -161,7 +161,7 @@ export default function EmployeeList({
 
   if (employees.length === 0) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="flex h-96 items-center justify-center rounded-[24px] border border-dashed border-slate-300 bg-white">
         <p className="text-gray-500">No employees found.</p>
       </div>
     );

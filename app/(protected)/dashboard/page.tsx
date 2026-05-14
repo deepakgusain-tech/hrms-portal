@@ -43,16 +43,16 @@ function DashboardHero({
   children?: ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-lg border border-slate-200 bg-gradient-to-r from-sky-50 via-white to-cyan-50 shadow-sm">
-      <div className="grid gap-6 p-5 md:p-6 lg:grid-cols-[1.1fr_0.9fr]">
+    <section className="dashboard-grid-glow glass-panel-strong overflow-hidden rounded-[2rem]">
+      <div className="grid gap-6 p-5 md:p-7 lg:grid-cols-[1.1fr_0.9fr]">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-cyan-700">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-700/85">
             {eyebrow}
           </p>
-          <h1 className="mt-3 text-2xl font-semibold text-slate-900 md:text-3xl">
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 md:text-4xl">
             {title}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+          <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-600 md:text-[15px]">
             {description}
           </p>
         </div>
@@ -76,15 +76,15 @@ function MetricCard({
   icon: ComponentType<{ className?: string }>;
 }) {
   const content = (
-    <div className="h-full rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:border-cyan-300 hover:shadow-md">
+    <div className="glass-panel h-full rounded-[1.6rem] p-4 transition duration-300 hover:-translate-y-0.5 hover:border-cyan-200 hover:bg-white/70 hover:shadow-[0_24px_50px_-30px_rgba(8,145,178,0.45)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm text-slate-500">{label}</p>
+          <p className="text-sm font-medium text-slate-500">{label}</p>
           <p className="mt-2 break-words text-2xl font-semibold text-slate-950">
             {value}
           </p>
         </div>
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-700">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20">
           <Icon className="h-5 w-5" />
         </span>
       </div>
@@ -113,7 +113,7 @@ function SectionCard({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <section className="glass-panel rounded-[1.8rem] p-5 md:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-slate-950">{title}</h2>
@@ -124,7 +124,7 @@ function SectionCard({
         {action ? (
           <Link
             href={action.href}
-            className="inline-flex items-center gap-2 text-sm font-medium text-cyan-700 hover:text-cyan-900"
+            className="glass-chip inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium text-cyan-800 transition hover:bg-white/80 hover:text-cyan-950"
           >
             {action.label}
             <ArrowRight className="h-4 w-4" />
@@ -138,7 +138,7 @@ function SectionCard({
 
 function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+    <div className="rounded-[1.4rem] border border-dashed border-slate-300/80 bg-white/45 p-4 text-sm text-slate-500 backdrop-blur-sm">
       {children}
     </div>
   );
@@ -188,7 +188,7 @@ export default async function DashboardPage() {
 
     if (!employer) {
       return (
-        <div className="min-h-full bg-slate-50 p-3 md:p-5">
+        <div className="min-h-full p-3 md:p-5">
           <EmptyState>Employer account was not found.</EmptyState>
         </div>
       );
@@ -216,14 +216,14 @@ export default async function DashboardPage() {
     );
 
     return (
-      <div className="min-h-full bg-slate-50 p-3 md:p-5">
+      <div className="min-h-full p-3 md:p-5">
         <div className="w-full space-y-5">
           <DashboardHero
             eyebrow="Employer Dashboard"
             title={employer.company.companyName}
             description="A company-level view using employee profiles, document reviews, leave requests, and attendance records already connected in this HRMS."
           >
-            <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+            <div className="glass-panel rounded-[1.6rem] p-4 text-sm text-slate-700">
               <div className="grid gap-3">
                 <div className="flex items-center justify-between gap-4">
                   <span>Employer</span>
@@ -272,13 +272,13 @@ export default async function DashboardPage() {
             <SectionCard title="Company Employees" description="Latest live profile data for this employer account.">
               <div className="grid gap-3 md:grid-cols-2">
                 {employees.slice(0, 6).map((employee) => (
-                  <div key={employee.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div key={employee.id} className="rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-slate-950">{employee.employeeName}</p>
                         <p className="text-sm text-slate-500">{employee.employeeCode}</p>
                       </div>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                      <span className="glass-chip rounded-full px-2.5 py-1 text-xs font-medium text-slate-700">
                         {employee.status}
                       </span>
                     </div>
@@ -294,10 +294,10 @@ export default async function DashboardPage() {
             <SectionCard title="Pending Leave" description="Recent company leave requests awaiting action by HR.">
               <div className="space-y-3">
                 {pendingLeaves.slice(0, 5).map((request) => (
-                  <div key={request.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div key={request.id} className="rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-slate-950">{request.employeeName}</p>
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      <span className="rounded-full bg-amber-100/85 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200/70">
                         {request.status}
                       </span>
                     </div>
@@ -473,14 +473,14 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="min-h-full bg-slate-50 p-3 md:p-5">
-        <div className="w-full space-y-5">
+    <div className="min-h-full p-3 md:p-5">
+      <div className="w-full space-y-5">
         <DashboardHero
           eyebrow="HRMS Dashboard"
           title={`Welcome back, ${session.user.name || session.user.firstName || "User"}`}
           description="A live overview of the modules already built in this portal: employees, employers, attendance, leave, documents, projects, transfers, users, roles, and configuration."
         >
-          <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">
+          <div className="glass-panel grid gap-3 rounded-[1.6rem] p-4 text-sm text-slate-700">
             <div className="flex items-center justify-between gap-4">
               <span>Active employee ratio</span>
               <strong className="text-slate-900">{percent(activeEmployees.length, employees.length)}</strong>
@@ -512,10 +512,10 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 <p className="text-sm font-medium text-slate-700">Leave Requests</p>
                 {pendingLeaves.slice(0, 4).map((request) => (
-                  <div key={request.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div key={request.id} className="rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-slate-950">{request.employee.employeeName}</p>
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      <span className="rounded-full bg-amber-100/85 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200/70">
                         {request.status}
                       </span>
                     </div>
@@ -530,12 +530,12 @@ export default async function DashboardPage() {
               <div className="space-y-3">
                 <p className="text-sm font-medium text-slate-700">Document Reviews</p>
                 {pendingDocs.slice(0, 4).map((document) => (
-                  <div key={document.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div key={document.id} className="rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-slate-950">
                         {document.employee?.employeeName || document.employeeCode}
                       </p>
-                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800">
+                      <span className="rounded-full bg-amber-100/85 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200/70">
                         {document.reviewStatus}
                       </span>
                     </div>
@@ -552,12 +552,12 @@ export default async function DashboardPage() {
           <SectionCard title="Today Attendance" description="Recent attendance records marked for the current date." action={{ label: "Open attendance", href: "/attendance" }}>
             <div className="space-y-3">
               {todayAttendance.map((record) => (
-                <div key={record.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div key={record.id} className="flex items-center justify-between gap-3 rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                   <div>
                     <p className="font-medium text-slate-950">{record.employee.employeeName}</p>
                     <p className="text-sm text-slate-500">{record.employee.employeeCode}</p>
                   </div>
-                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                  <span className="glass-chip rounded-full px-2.5 py-1 text-xs font-medium text-slate-700">
                     {record.status.replaceAll("_", " ")}
                   </span>
                 </div>
@@ -574,10 +574,12 @@ export default async function DashboardPage() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm transition hover:border-cyan-300 hover:bg-cyan-50"
+                  className="flex items-center justify-between gap-3 rounded-[1.35rem] border border-white/50 bg-white/45 p-4 text-sm transition duration-300 hover:-translate-y-0.5 hover:border-cyan-200 hover:bg-white/70"
                 >
                   <span className="flex items-center gap-3 font-medium text-slate-800">
-                    <item.icon className="h-4 w-4 text-cyan-700" />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/20">
+                      <item.icon className="h-4 w-4" />
+                    </span>
                     {item.label}
                   </span>
                   <span className="text-slate-600">{item.value}</span>
@@ -588,7 +590,7 @@ export default async function DashboardPage() {
 
           <SectionCard title="Recent Projects" description="Project records and their current status." action={{ label: "Open projects", href: "/projects" }}>
             <div className="space-y-3">
-              <div className="grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-4">
+              <div className="grid gap-3 rounded-[1.5rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm sm:grid-cols-4">
                 <div>
                   <p className="text-xs font-medium uppercase text-slate-500">Todo</p>
                   <p className="mt-1 text-xl font-semibold text-slate-950">{todoTasks}</p>
@@ -616,10 +618,10 @@ export default async function DashboardPage() {
                   : 0;
 
                 return (
-                <div key={project.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div key={project.id} className="rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium text-slate-950">{project.name}</p>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                    <span className="glass-chip rounded-full px-2.5 py-1 text-xs font-medium text-slate-700">
                       {project.status.replaceAll("_", " ")}
                     </span>
                   </div>
@@ -628,9 +630,9 @@ export default async function DashboardPage() {
                     <span>{project._count.tasks} task(s)</span>
                     <span>{completion}% complete</span>
                   </div>
-                  <div className="mt-3 h-2 rounded-full bg-white">
+                  <div className="mt-3 h-2 rounded-full bg-white/80">
                     <div
-                      className="h-2 rounded-full bg-cyan-600"
+                      className="h-2 rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600"
                       style={{ width: `${completion}%` }}
                     />
                   </div>
@@ -647,10 +649,10 @@ export default async function DashboardPage() {
           <SectionCard title="Recent Movement" description="Transfer and promotion history connected to employees." action={{ label: "Open module", href: "/transfer-promotion" }}>
             <div className="space-y-3">
               {transfers.map((movement) => (
-                <div key={movement.id} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div key={movement.id} className="rounded-[1.4rem] border border-white/50 bg-white/45 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] backdrop-blur-sm">
                   <div className="flex items-start justify-between gap-3">
                     <p className="font-medium text-slate-950">{movement.employee.employeeName}</p>
-                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-medium text-slate-700">
+                    <span className="glass-chip rounded-full px-2.5 py-1 text-xs font-medium text-slate-700">
                       {movement.movementType.replaceAll("_", " ")}
                     </span>
                   </div>

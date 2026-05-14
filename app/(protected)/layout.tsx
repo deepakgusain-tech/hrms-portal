@@ -50,14 +50,27 @@ export default async function ProtectedLayout({
         accessibleRoutes={accessibleRoutes}
       />
 
-      <SidebarInset className="flex h-screen flex-col overflow-hidden">
-        <header className="sticky top-0 z-40 flex h-14 items-center border-b bg-white px-4">
-          <SidebarTrigger />
+      <SidebarInset className="flex h-screen flex-col overflow-hidden bg-transparent">
+        <header className="sticky top-0 z-40 border-b border-white/40 bg-white/40 px-4 backdrop-blur-xl">
+          <div className="mx-auto flex h-16 w-full max-w-[1600px] items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="glass-chip rounded-xl p-1.5 text-slate-700 shadow-sm">
+                <SidebarTrigger />
+              </div>
+              <div className="hidden sm:block">
+                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-cyan-700/80">
+                  HRMS Workspace
+                </p>
+               
+              </div>
+            </div>
+
+            
+          </div>
         </header>
 
-        {/* ✅ Make this the scroll area */}
         <div className="flex-1 overflow-y-auto">
-          <div className="flex min-w-0 flex-col gap-4 p-2 mt-2">
+          <div className="mx-auto flex min-w-0 max-w-[1600px] flex-col gap-4 px-2 py-4 md:px-3">
             {children}
           </div>
         </div>
