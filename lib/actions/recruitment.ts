@@ -27,7 +27,25 @@ export type RecruitmentApplicantOption = {
   requestId: string;
   candidateName: string;
   profilePost: string;
+  pipelineStatus?: string;
 };
+
+export type RecruitmentInterviewEligibleApplicant = RecruitmentApplicantOption & {
+  email?: string;
+  mobileNumber?: string;
+  skillsLevel?: string;
+  totalExperience?: string;
+  relevantExperience?: string;
+  qualification?: string;
+  resumeSummary?: string;
+};
+
+const INTERVIEW_ELIGIBLE_PIPELINE_STATUSES = new Set([
+  "SHORTLISTED",
+  "INTERVIEW_SCHEDULED",
+  "INTERVIEW_IN_PROGRESS",
+  "INTERVIEW_COMPLETED",
+]);
 
 const dataFilePath = path.join(
   process.cwd(),
@@ -246,6 +264,7 @@ function normalizeRecruitmentApplication(
     feedbackDate: input.feedbackDate || "",
     internalStatus: input.internalStatus,
     clientFinalStatus: input.clientFinalStatus,
+    pipelineStatus: input.pipelineStatus || "APPLIED",
     updatedToCandidateDate: input.updatedToCandidateDate || "",
     offeredDate: input.offeredDate || "",
     offerAccepted: input.offerAccepted,
@@ -293,7 +312,57 @@ export async function getRecruitmentApplicantOptions(): Promise<
     requestId: item.requestId || item.serialNumber || "",
     candidateName: item.candidateName,
     profilePost: item.profilePost,
+    pipelineStatus: item.pipelineStatus,
   }));
+}
+
+export async function getInterviewEligibleApplicants(): Promise<
+  RecruitmentInterviewEligibleApplicant[]
+> {
+  const records = await getRecruitmentApplications();
+
+  return records
+    .filter((item) =>
+      INTERVIEW_ELIGIBLE_PIPELINE_STATUSES.has(item.pipelineStatus || ""),
+    )
+    .map((item) => ({
+      id: item.id ?? "",
+      requestId: item.requestId || item.serialNumber || "",
+      candidateName: item.candidateName,
+      profilePost: item.profilePost,
+      pipelineStatus: item.pipelineStatus,
+      email: item.email || "",
+      mobileNumber: item.mobileNumber || "",
+      skillsLevel: item.skillsLevel || "",
+      totalExperience: item.totalExperience || "",
+      relevantExperience: item.relevantExperience || "",
+      qualification: item.qualification || "",
+      resumeSummary: item.remarks || "",
+    }));
+}
+
+export async function updateRecruitmentPipelineStatus(
+  applicantId: string,
+  pipelineStatus: string,
+) {
+  const records = await readRecruitmentData();
+  const index = records.findIndex((item) => item.id === applicantId);
+
+  if (index === -1) {
+    return;
+  }
+
+  records[index] = normalizeRecruitmentApplication(
+    {
+      ...records[index],
+      pipelineStatus,
+    },
+    records,
+  );
+
+  await writeRecruitmentData(records);
+  revalidatePath("/recruitment");
+  revalidatePath("/interviews");
 }
 
 export async function createRecruitmentApplication(

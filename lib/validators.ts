@@ -38,6 +38,39 @@ const recruitmentIntakeSources = [
   "WALK_IN",
   "OTHER",
 ] as const;
+const recruitmentApplicantPipelineStatuses = [
+  "APPLIED",
+  "SCREENING",
+  "SHORTLISTED",
+  "INTERVIEW_SCHEDULED",
+  "INTERVIEW_IN_PROGRESS",
+  "INTERVIEW_COMPLETED",
+  "SELECTED",
+  "REJECTED",
+  "OFFER_PENDING",
+] as const;
+const interviewRoundTypes = [
+  "HR_ROUND",
+  "TECHNICAL_ROUND_1",
+  "TECHNICAL_ROUND_2",
+  "MANAGERIAL_ROUND",
+  "FINAL_HR_ROUND",
+] as const;
+const interviewModes = ["ONLINE", "OFFLINE"] as const;
+const interviewStatuses = [
+  "SCHEDULED",
+  "RESCHEDULED",
+  "IN_PROGRESS",
+  "COMPLETED",
+  "CANCELLED",
+  "NO_SHOW",
+] as const;
+const interviewRecommendationStatuses = [
+  "PROCEED_TO_NEXT_ROUND",
+  "SELECTED",
+  "REJECTED",
+  "ON_HOLD",
+] as const;
 
 /* ---------------- AUTH ---------------- */
 export const loginFormSchema = z.object({
@@ -403,6 +436,7 @@ export const recruitmentSchema = z.object({
   feedbackDate: z.string().optional(),
   internalStatus: z.enum(recruitmentPipelineStatuses).optional(),
   clientFinalStatus: z.enum(recruitmentPipelineStatuses).optional(),
+  pipelineStatus: z.enum(recruitmentApplicantPipelineStatuses).optional(),
   updatedToCandidateDate: z.string().optional(),
   offeredDate: z.string().optional(),
   offerAccepted: z.enum(recruitmentTriStatuses).optional(),
@@ -430,6 +464,49 @@ export const recruitmentIntakeSchema = z.object({
   experience: z.string().min(1, "Experience is required"),
   appliedPosition: z.string().min(1, "Applied position is required"),
   source: z.enum(recruitmentIntakeSources),
+  pipelineStatus: z.enum(recruitmentApplicantPipelineStatuses).optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
+/* ---------------- INTERVIEW MANAGEMENT ---------------- */
+const interviewAuditEntrySchema = z.object({
+  id: z.string().optional(),
+  action: z.string().min(1, "Action is required"),
+  description: z.string().min(1, "Description is required"),
+  actorId: z.string().optional(),
+  actorName: z.string().optional(),
+  actorRole: z.string().optional(),
+  createdAt: z.string().optional(),
+});
+
+export const interviewSchema = z.object({
+  id: z.string().optional(),
+  interviewId: z.string().optional(),
+  applicantId: z.string().min(1, "Applicant is required"),
+  applicantName: z.string().min(1, "Applicant name is required"),
+  appliedPosition: z.string().min(1, "Applied position is required"),
+  interviewRound: z.enum(interviewRoundTypes),
+  interviewerId: z.string().min(1, "Interviewer is required"),
+  interviewerName: z.string().min(1, "Interviewer name is required"),
+  interviewerJobRole: z.string().optional(),
+  scheduledDate: z.string().min(1, "Scheduled date is required"),
+  scheduledTime: z.string().min(1, "Scheduled time is required"),
+  interviewMode: z.enum(interviewModes),
+  meetingLinkOrLocation: z.string().min(1, "Meeting link or location is required"),
+  status: z.enum(interviewStatuses),
+  feedback: z.string().optional(),
+  ratingScore: z.coerce.number().min(0).max(10).nullable().optional(),
+  recommendation: z.enum(interviewRecommendationStatuses).nullable().optional(),
+  strengths: z.string().optional(),
+  weaknesses: z.string().optional(),
+  createdBy: z.string().optional(),
+  createdByName: z.string().optional(),
+  updatedBy: z.string().optional(),
+  updatedByName: z.string().optional(),
+  completedAt: z.string().nullable().optional(),
+  history: z.array(interviewAuditEntrySchema).optional(),
+  statusNote: z.string().optional(),
   createdAt: z.string().nullable().optional(),
   updatedAt: z.string().nullable().optional(),
 });

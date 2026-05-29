@@ -178,6 +178,17 @@ const RecruitmentForm = ({ data, update, nextSerialNumber }: Props) => {
               "Enter current location",
             )}
             {renderInput("profilePost", "Profile / Post", "Enter profile or post")}
+            {renderSelect("pipelineStatus", "Pipeline Status", [
+              { label: "Applied", value: "APPLIED" },
+              { label: "Screening", value: "SCREENING" },
+              { label: "Shortlisted", value: "SHORTLISTED" },
+              { label: "Interview Scheduled", value: "INTERVIEW_SCHEDULED" },
+              { label: "Interview In Progress", value: "INTERVIEW_IN_PROGRESS" },
+              { label: "Interview Completed", value: "INTERVIEW_COMPLETED" },
+              { label: "Selected", value: "SELECTED" },
+              { label: "Rejected", value: "REJECTED" },
+              { label: "Offer Pending", value: "OFFER_PENDING" },
+            ])}
             {renderSelect("status", "Status", [
               { label: "Active", value: Status.ACTIVE },
               { label: "Inactive", value: Status.INACTIVE },

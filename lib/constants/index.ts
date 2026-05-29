@@ -219,6 +219,7 @@ export const recruitmentDefaultValues = {
   feedbackDate: "",
   internalStatus: undefined,
   clientFinalStatus: undefined,
+  pipelineStatus: "APPLIED" as const,
   updatedToCandidateDate: "",
   offeredDate: "",
   offerAccepted: undefined,
@@ -231,6 +232,34 @@ export const recruitmentDefaultValues = {
   joiningDetailsSharedDate: "",
   remarks: "",
   status: Status.ACTIVE,
+};
+
+export const interviewDefaultValues = {
+  interviewId: "",
+  applicantId: "",
+  applicantName: "",
+  appliedPosition: "",
+  interviewRound: "HR_ROUND" as const,
+  interviewerId: "",
+  interviewerName: "",
+  interviewerJobRole: "",
+  scheduledDate: "",
+  scheduledTime: "",
+  interviewMode: "ONLINE" as const,
+  meetingLinkOrLocation: "",
+  status: "SCHEDULED" as const,
+  feedback: "",
+  ratingScore: 0,
+  recommendation: null,
+  strengths: "",
+  weaknesses: "",
+  createdBy: "",
+  createdByName: "",
+  updatedBy: "",
+  updatedByName: "",
+  completedAt: "",
+  history: [],
+  statusNote: "",
 };
 
 export const projectDefaultValues = {
@@ -248,3 +277,15 @@ export const projectMemberDefaultValues = {
   employeeIds: [],
   assignedAt: "",
 }
+
+export const recruitmentIntakeDefaultValues = {
+  name: "",
+  email: "",
+  phone: "",
+  resumeUrl: "",
+  skills: "",
+  experience: "",
+  appliedPosition: "",
+  source: "LINKEDIN" as const,
+  pipelineStatus: "APPLIED" as const,
+};
