@@ -57,13 +57,28 @@ function hasEodReportingFields(client: PrismaClient) {
   )
 }
 
+function hasRecruitmentStorageModels(client: PrismaClient) {
+  const models = (client as PrismaClient & {
+    _runtimeDataModel?: {
+      models?: Record<string, unknown>
+    }
+  })._runtimeDataModel?.models
+
+  return Boolean(
+    models?.RecruitmentIntake &&
+      models?.RecruitmentApplication &&
+      models?.InterviewRecord,
+  )
+}
+
 export const prisma = (() => {
   const cached = globalForPrisma.prisma
 
   if (
     cached &&
     hasEmployeeDocumentReviewFields(cached) &&
-    hasEodReportingFields(cached)
+    hasEodReportingFields(cached) &&
+    hasRecruitmentStorageModels(cached)
   ) {
     return cached
   }

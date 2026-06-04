@@ -4,6 +4,8 @@ import { promises as fs } from "fs";
 import path from "path";
 import { revalidatePath } from "next/cache";
 
+import { prisma } from "@/lib/prisma";
+import { mapRecruitmentIntakeRecord, toRecruitmentIntakeDbInput } from "@/lib/recruitment-db";
 import { type RecruitmentIntake } from "@/types";
 import { formatError } from "../utils";
 import { recruitmentIntakeSchema } from "../validators";
@@ -35,39 +37,6 @@ const INTERVIEW_ELIGIBLE_PIPELINE_STATUSES = new Set([
   "INTERVIEW_IN_PROGRESS",
   "INTERVIEW_COMPLETED",
 ]);
-
-const dataFilePath = path.join(
-  process.cwd(),
-  "lib",
-  "data",
-  "recruitment-intake.json",
-);
-
-async function ensureDataFile() {
-  try {
-    await fs.access(dataFilePath);
-  } catch {
-    await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
-    await fs.writeFile(dataFilePath, "[]", "utf8");
-  }
-}
-
-async function readRecruitmentIntakeData(): Promise<RecruitmentIntake[]> {
-  await ensureDataFile();
-  const raw = await fs.readFile(dataFilePath, "utf8");
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as RecruitmentIntake[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeRecruitmentIntakeData(data: RecruitmentIntake[]) {
-  await ensureDataFile();
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2), "utf8");
-}
 
 function getStringValue(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -148,10 +117,11 @@ function buildIntakeRecordFromForm(
 
 export async function getRecruitmentIntakes(): Promise<RecruitmentIntake[]> {
   try {
-    const records = await readRecruitmentIntakeData();
-    return records.sort((a, b) =>
-      (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || ""),
-    );
+    const records = await prisma.recruitmentIntake.findMany({
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    });
+
+    return records.map(mapRecruitmentIntakeRecord);
   } catch {
     return [];
   }
@@ -212,19 +182,11 @@ export async function updateRecruitmentIntakePipelineStatus(
   applicantId: string,
   pipelineStatus: RecruitmentIntake["pipelineStatus"],
 ) {
-  const records = await readRecruitmentIntakeData();
-  const index = records.findIndex((item) => item.id === applicantId);
-
-  if (index === -1) {
-    return;
-  }
-
-  records[index] = normalizeRecruitmentIntake({
-    ...records[index],
-    pipelineStatus,
+  await prisma.recruitmentIntake.updateMany({
+    where: { id: applicantId },
+    data: { pipelineStatus: pipelineStatus || "APPLIED" },
   });
 
-  await writeRecruitmentIntakeData(records);
   revalidatePath("/recruitment-intake");
   revalidatePath("/interviews");
 }
@@ -233,7 +195,6 @@ export async function createRecruitmentIntake(
   formData: FormData,
 ): Promise<ActionResponse> {
   try {
-    const records = await readRecruitmentIntakeData();
     const { parsed, resumeFile } = buildIntakeRecordFromForm(formData);
 
     if (!resumeFile) {
@@ -251,8 +212,9 @@ export async function createRecruitmentIntake(
       },
     );
 
-    records.push(nextRecord);
-    await writeRecruitmentIntakeData(records);
+    await prisma.recruitmentIntake.create({
+      data: toRecruitmentIntakeDbInput(nextRecord),
+    });
 
     revalidatePath("/recruitment-intake");
 
@@ -273,10 +235,11 @@ export async function updateRecruitmentIntake(
   id: string,
 ): Promise<ActionResponse> {
   try {
-    const records = await readRecruitmentIntakeData();
-    const index = records.findIndex((item) => item.id === id);
+    const existing = await prisma.recruitmentIntake.findUnique({
+      where: { id },
+    });
 
-    if (index === -1) {
+    if (!existing) {
       return {
         success: false,
         message: "Recruitment record not found",
@@ -285,23 +248,37 @@ export async function updateRecruitmentIntake(
 
     const { parsed, resumeFile } = buildIntakeRecordFromForm(
       formData,
-      records[index],
+      mapRecruitmentIntakeRecord(existing),
     );
 
     const resumeUrl = resumeFile
       ? await saveResumeUpload(resumeFile)
-      : records[index].resumeUrl;
+      : existing.resumeUrl ?? "";
 
-    records[index] = normalizeRecruitmentIntake(
+    const nextRecord = normalizeRecruitmentIntake(
       {
         ...parsed,
         id,
-        createdAt: records[index].createdAt,
+        createdAt: existing.createdAt.toISOString(),
         resumeUrl,
       },
     );
 
-    await writeRecruitmentIntakeData(records);
+    const {
+      id: recordId,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = toRecruitmentIntakeDbInput(nextRecord);
+    void recordId;
+    void createdAt;
+    void updatedAt;
+
+    await prisma.recruitmentIntake.update({
+      where: { id },
+      data: updateData,
+    });
+
     revalidatePath("/recruitment-intake");
     revalidatePath(`/recruitment-intake/edit/${id}`);
 
@@ -319,10 +296,10 @@ export async function updateRecruitmentIntake(
 
 export async function deleteRecruitmentIntake(id: string): Promise<ActionResponse> {
   try {
-    const records = await readRecruitmentIntakeData();
-    const nextRecords = records.filter((item) => item.id !== id);
+    await prisma.recruitmentIntake.deleteMany({
+      where: { id },
+    });
 
-    await writeRecruitmentIntakeData(nextRecords);
     revalidatePath("/recruitment-intake");
 
     return {

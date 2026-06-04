@@ -2,11 +2,14 @@
 
 import bcrypt from "bcrypt";
 import { randomBytes } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
+import { prisma } from "@/lib/prisma";
+import {
+  mapRecruitmentApplicationRecord,
+  toRecruitmentApplicationDbInput,
+} from "@/lib/recruitment-db";
 import { RecruitmentApplication } from "@/types";
 import { APP_NAME, SERVER_URL } from "../constants";
 import { sendSystemEmail } from "../email";
@@ -46,41 +49,6 @@ const INTERVIEW_ELIGIBLE_PIPELINE_STATUSES = new Set([
   "INTERVIEW_IN_PROGRESS",
   "INTERVIEW_COMPLETED",
 ]);
-
-const dataFilePath = path.join(
-  process.cwd(),
-  "lib",
-  "data",
-  "recruitment-applications.json",
-);
-
-async function ensureDataFile() {
-  try {
-    await fs.access(dataFilePath);
-  } catch {
-    await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
-    await fs.writeFile(dataFilePath, "[]", "utf8");
-  }
-}
-
-async function readRecruitmentData(): Promise<RecruitmentApplication[]> {
-  await ensureDataFile();
-  const raw = await fs.readFile(dataFilePath, "utf8");
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? (parsed as RecruitmentApplication[])
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeRecruitmentData(data: RecruitmentApplication[]) {
-  await ensureDataFile();
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2), "utf8");
-}
 
 function getApplicantPortalNumber(record: RecruitmentApplication) {
   const match = /^APP-(\d+)$/i.exec(record.applicantPortalId ?? "");
@@ -288,16 +256,35 @@ export async function getRecruitmentApplications(): Promise<
   RecruitmentApplication[]
 > {
   try {
-    const rawRecords = await readRecruitmentData();
+    const rawRecords = (
+      await prisma.recruitmentApplication.findMany({
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      })
+    ).map(mapRecruitmentApplicationRecord);
     const { records, changed } = ensureApplicantIdentities(rawRecords);
 
     if (changed) {
-      await writeRecruitmentData(records);
+      await Promise.all(
+        records.map((record) => {
+          const {
+            id,
+            createdAt,
+            updatedAt,
+            ...updateData
+          } = toRecruitmentApplicationDbInput(record);
+          void id;
+          void createdAt;
+          void updatedAt;
+
+          return prisma.recruitmentApplication.update({
+            where: { id: record.id },
+            data: updateData,
+          });
+        }),
+      );
     }
 
-    return records.sort((a, b) =>
-      (b.updatedAt || "").localeCompare(a.updatedAt || ""),
-    );
+    return records;
   } catch {
     return [];
   }
@@ -346,22 +333,11 @@ export async function updateRecruitmentPipelineStatus(
   applicantId: string,
   pipelineStatus: RecruitmentApplication["pipelineStatus"],
 ) {
-  const records = await readRecruitmentData();
-  const index = records.findIndex((item) => item.id === applicantId);
+  await prisma.recruitmentApplication.updateMany({
+    where: { id: applicantId },
+    data: { pipelineStatus: pipelineStatus || "APPLIED" },
+  });
 
-  if (index === -1) {
-    return;
-  }
-
-  records[index] = normalizeRecruitmentApplication(
-    {
-      ...records[index],
-      pipelineStatus,
-    },
-    records,
-  );
-
-  await writeRecruitmentData(records);
   revalidatePath("/recruitment");
   revalidatePath("/interviews");
 }
@@ -371,15 +347,15 @@ export async function createRecruitmentApplication(
 ): Promise<ActionResponse> {
   try {
     const parsed = recruitmentSchema.parse(data);
-    const records = await readRecruitmentData();
 
     if (
       parsed.sourceInterviewApplicantId &&
-      records.some(
-        (record) =>
-          record.sourceInterviewApplicantId ===
-          parsed.sourceInterviewApplicantId,
-      )
+      (await prisma.recruitmentApplication.findUnique({
+        where: {
+          sourceInterviewApplicantId: parsed.sourceInterviewApplicantId,
+        },
+        select: { id: true },
+      }))
     ) {
       return {
         success: false,
@@ -388,10 +364,12 @@ export async function createRecruitmentApplication(
       };
     }
 
+    const records = await getRecruitmentApplications();
     const nextRecord = normalizeRecruitmentApplication(parsed, records);
 
-    records.push(nextRecord);
-    await writeRecruitmentData(records);
+    await prisma.recruitmentApplication.create({
+      data: toRecruitmentApplicationDbInput(nextRecord),
+    });
 
     revalidatePath("/recruitment");
 
@@ -456,19 +434,13 @@ export async function getCurrentApplicantApplication() {
 }
 
 export async function markApplicantDocumentsSubmitted(applicantId: string) {
-  const records = await readRecruitmentData();
-  const index = records.findIndex((item) => item.id === applicantId);
+  await prisma.recruitmentApplication.updateMany({
+    where: { id: applicantId },
+    data: {
+      applicantDocumentsSubmittedAt: new Date(),
+    },
+  });
 
-  if (index === -1) {
-    return;
-  }
-
-  records[index] = normalizeRecruitmentApplication({
-    ...records[index],
-    applicantDocumentsSubmittedAt: new Date().toISOString(),
-  }, records);
-
-  await writeRecruitmentData(records);
   revalidatePath("/recruitment");
   revalidatePath("/applicant-dashboard");
 }
@@ -479,31 +451,46 @@ export async function updateRecruitmentApplication(
 ): Promise<ActionResponse> {
   try {
     const parsed = recruitmentSchema.parse(data);
-    const records = await readRecruitmentData();
-    const index = records.findIndex((item) => item.id === id);
+    const existing = await prisma.recruitmentApplication.findUnique({
+      where: { id },
+    });
 
-    if (index === -1) {
+    if (!existing) {
       return {
         success: false,
         message: "Pre-onboarding candidate not found",
       };
     }
 
-    records[index] = normalizeRecruitmentApplication({
+    const records = await getRecruitmentApplications();
+    const current = mapRecruitmentApplicationRecord(existing);
+    const nextRecord = normalizeRecruitmentApplication({
       ...parsed,
       id,
-      createdAt: records[index].createdAt,
-      sourceInterviewApplicantId:
-        records[index].sourceInterviewApplicantId,
-      applicantPortalId: records[index].applicantPortalId,
-      applicantUsername: records[index].applicantUsername,
-      applicantPasswordHash: records[index].applicantPasswordHash,
-      applicantPortalEnabled: records[index].applicantPortalEnabled,
-      applicantInvitedAt: records[index].applicantInvitedAt,
-      applicantDocumentsSubmittedAt: records[index].applicantDocumentsSubmittedAt,
+      createdAt: current.createdAt,
+      sourceInterviewApplicantId: current.sourceInterviewApplicantId,
+      applicantPortalId: current.applicantPortalId,
+      applicantUsername: current.applicantUsername,
+      applicantPasswordHash: current.applicantPasswordHash,
+      applicantPortalEnabled: current.applicantPortalEnabled,
+      applicantInvitedAt: current.applicantInvitedAt,
+      applicantDocumentsSubmittedAt: current.applicantDocumentsSubmittedAt,
     }, records);
 
-    await writeRecruitmentData(records);
+    const {
+      id: currentId,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = toRecruitmentApplicationDbInput(nextRecord);
+    void currentId;
+    void createdAt;
+    void updatedAt;
+
+    await prisma.recruitmentApplication.update({
+      where: { id },
+      data: updateData,
+    });
 
     revalidatePath("/recruitment");
     revalidatePath(`/recruitment/edit/${id}`);
@@ -524,7 +511,11 @@ export async function sendApplicantPortalInvite(
   id: string,
 ): Promise<RecruitmentActionResponse> {
   try {
-    const rawRecords = await readRecruitmentData();
+    const rawRecords = (
+      await prisma.recruitmentApplication.findMany({
+        orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+      })
+    ).map(mapRecruitmentApplicationRecord);
     const { records } = ensureApplicantIdentities(rawRecords);
     const index = records.findIndex((item) => item.id === id);
 
@@ -567,8 +558,20 @@ export async function sendApplicantPortalInvite(
       applicantInvitedAt: new Date().toISOString(),
     }, records);
 
-    records[index] = nextRecord;
-    await writeRecruitmentData(records);
+    const {
+      id: currentId,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = toRecruitmentApplicationDbInput(nextRecord);
+    void currentId;
+    void createdAt;
+    void updatedAt;
+
+    await prisma.recruitmentApplication.update({
+      where: { id },
+      data: updateData,
+    });
 
     revalidatePath("/recruitment");
 
@@ -589,10 +592,10 @@ export async function deleteRecruitmentApplication(
   id: string,
 ): Promise<ActionResponse> {
   try {
-    const records = await readRecruitmentData();
-    const nextRecords = records.filter((item) => item.id !== id);
+    await prisma.recruitmentApplication.deleteMany({
+      where: { id },
+    });
 
-    await writeRecruitmentData(nextRecords);
     revalidatePath("/recruitment");
 
     return {

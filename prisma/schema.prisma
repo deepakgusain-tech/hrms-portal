@@ -26,6 +26,7 @@ enum DocumentReviewStatus {
   PENDING
   APPROVED
   REJECTED
+  REUPLOAD_REQUESTED
 }
 
 enum EmployeeDocumentOwnerType {
@@ -83,7 +84,7 @@ model User {
   roleId              String    @db.Uuid
   role                Role      @relation(fields: [roleId], references: [id])
 
-  reviewedLeaveRequests LeaveRequest[]
+  reviewedLeaveRequests     LeaveRequest[]
   reviewedEmployeeDocuments EmployeeDocument[]
 
   @@index([resetTokenHash])
@@ -194,11 +195,11 @@ model TransferPromotion {
 }
 
 model EmployeeDocument {
-  id               String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   documentOwnerType EmployeeDocumentOwnerType @default(EMPLOYEE)
   applicantId       String?
   candidateName     String?
-  employeeId        String?                  @db.Uuid
+  employeeId        String?                   @db.Uuid
   employeeCode      String
 
   // ---------------- DOCUMENTS ----------------
@@ -217,17 +218,141 @@ model EmployeeDocument {
   // ---------------- COMMON ----------------
   reviewStatus DocumentReviewStatus @default(PENDING)
   reviewRemark String?
-  reviewedById String? @db.Uuid
+  reviewedById String?              @db.Uuid
   reviewedAt   DateTime?
-  remark    String?
-  status    Status   @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  remark       String?
+  status       Status               @default(ACTIVE)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 
   documentPayload Json?
 
-  employee EmployeeProfile? @relation(fields: [employeeId], references: [id])
-  reviewedBy User? @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+  employee   EmployeeProfile? @relation(fields: [employeeId], references: [id])
+  reviewedBy User?            @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+}
+
+model RecruitmentIntake {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  email           String
+  phone           String
+  resumeUrl       String?
+  skills          String
+  experience      String
+  appliedPosition String
+  source          String
+  pipelineStatus  String   @default("APPLIED")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([pipelineStatus])
+  @@index([updatedAt])
+}
+
+model RecruitmentApplication {
+  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceInterviewApplicantId     String?   @unique @db.Uuid
+  applicantPortalId              String?   @unique
+  applicantUsername              String?   @unique
+  applicantPasswordHash          String?
+  applicantPortalEnabled         Boolean   @default(false)
+  applicantInvitedAt             DateTime?
+  applicantDocumentsSubmittedAt  DateTime?
+  serialNumber                   String?
+  requestId                      String?
+  clientProjectName              String?
+  requestReceivedDate            String?
+  requestApprovedBy              String?
+  hrOwnerEmployeeNumber          String?
+  hrOwnerName                    String?
+  businessOwnerEmployeeNumber    String?
+  businessOwnerName              String?
+  candidateName                  String
+  gender                         String?
+  dateOfBirth                    String?
+  mobileNumber                   String
+  email                          String?
+  currentLocation                String?
+  preferredLocation              String?
+  noticePeriod                   String?
+  qualification                  String?
+  skillsLevel                    String?
+  profilePost                    String
+  certification                  String?
+  totalExperience                String?
+  relevantExperience             String?
+  currentCompany                 String?
+  currentCtc                     String?
+  expectedCtc                    String?
+  offeredCtc                     String?
+  profileSource                  String?
+  profileReceiveDate             String?
+  internalScreeningDate          String?
+  internalScreeningCleared       String?
+  profileSentToBusinessOwner     String?
+  profileSentToBusinessOwnerDate String?
+  profileConnectWithClientDate   String?
+  interviewedByClient            String?
+  clientInterviewDate            String?
+  feedbackDate                   String?
+  internalStatus                 String?
+  clientFinalStatus              String?
+  pipelineStatus                 String?   @default("APPLIED")
+  updatedToCandidateDate         String?
+  offeredDate                    String?
+  offerAccepted                  String?
+  reasonIfOfferNotAccepted       String?
+  agreedJoiningDate              String?
+  joined                         String?
+  reasonIfNotJoined              String?
+  actualJoiningDate              String?
+  joiningDetailsShared           String?
+  joiningDetailsSharedDate       String?
+  remarks                        String?
+  status                         Status    @default(ACTIVE)
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+
+  @@index([email])
+  @@index([pipelineStatus])
+  @@index([updatedAt])
+}
+
+model InterviewRecord {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  interviewId           String
+  applicantId           String    @db.Uuid
+  applicantName         String
+  appliedPosition       String
+  interviewRound        String
+  interviewerId         String
+  interviewerName       String
+  interviewerJobRole    String?
+  scheduledDate         String
+  scheduledTime         String
+  interviewMode         String
+  meetingLinkOrLocation String
+  status                String
+  feedback              String?
+  ratingScore           Int?
+  recommendation        String?
+  strengths             String?
+  weaknesses            String?
+  createdBy             String?
+  createdByName         String?
+  updatedBy             String?
+  updatedByName         String?
+  completedAt           DateTime?
+  history               Json?
+  statusNote            String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([applicantId])
+  @@index([interviewerId])
+  @@index([interviewId])
+  @@index([recommendation])
+  @@index([updatedAt])
 }
 
 model EmployeeProfile {
@@ -267,19 +392,19 @@ model EmployeeProfile {
   jobRole       JobRole?          @relation(fields: [jobRoleId], references: [id])
   workLocation  WorkLocation?     @relation(fields: [workLocationId], references: [id])
 
-  employeeDocuments  EmployeeDocument[]
-  transferPromotions TransferPromotion[]
-  createdProjects    Project[]
-  projectMembers     ProjectMember[]
-  tasks              Task[]
-  taskComments       TaskComment[]
-  taskSubmissions    TaskSubmission[]
-  attendances        Attendance[]
-  leaveRequests      LeaveRequest[]
-  eodReports         EodReport[]
-  reviewedEodReports EodReport[]      @relation("EodReviewedByManager")
-  monthlyEodReviews  MonthlyEodReview[]
-  managedMonthlyEodReviews MonthlyEodReview[] @relation("MonthlyEodReviewedByManager")
+  employeeDocuments        EmployeeDocument[]
+  transferPromotions       TransferPromotion[]
+  createdProjects          Project[]
+  projectMembers           ProjectMember[]
+  tasks                    Task[]
+  taskComments             TaskComment[]
+  taskSubmissions          TaskSubmission[]
+  attendances              Attendance[]
+  leaveRequests            LeaveRequest[]
+  eodReports               EodReport[]
+  reviewedEodReports       EodReport[]         @relation("EodReviewedByManager")
+  monthlyEodReviews        MonthlyEodReview[]
+  managedMonthlyEodReviews MonthlyEodReview[]  @relation("MonthlyEodReviewedByManager")
 
   @@index([managerId])
   @@index([resetTokenHash])
@@ -414,9 +539,9 @@ model TaskSubmission {
   taskId     String @db.Uuid
   employeeId String @db.Uuid
 
-  workDate    DateTime @db.Date
-  summary     String
-  reviewStatus String @default("PENDING")
+  workDate     DateTime  @db.Date
+  summary      String
+  reviewStatus String    @default("PENDING")
   reviewerTag  String
   reviewRemark String?
   reviewedAt   DateTime?
@@ -450,7 +575,7 @@ model Attendance {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  employee EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   eodReports EodReport[]
 
   @@unique([employeeId, date])

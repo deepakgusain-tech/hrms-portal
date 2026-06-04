@@ -7,30 +7,19 @@ import { formatError } from "../utils";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { auth, signIn, signOut } from "@/auth";
 import bcrypt from "bcrypt";
-import { promises as fs } from "fs";
-import path from "path";
-
-type ApplicantLoginRecord = {
-  email?: string;
-  applicantPortalId?: string;
-  applicantUsername?: string;
-  applicantPasswordHash?: string;
-  applicantPortalEnabled?: boolean;
-  status?: string;
-};
 
 async function findApplicantForLogin(identifier: string) {
-  const dataFilePath = path.join(
-    process.cwd(),
-    "lib",
-    "data",
-    "recruitment-applications.json",
-  );
-
   try {
-    const raw = await fs.readFile(dataFilePath, "utf8");
-    const parsed = JSON.parse(raw);
-    const records = Array.isArray(parsed) ? (parsed as ApplicantLoginRecord[]) : [];
+    const records = await prisma.recruitmentApplication.findMany({
+      select: {
+        email: true,
+        applicantPortalId: true,
+        applicantUsername: true,
+        applicantPasswordHash: true,
+        applicantPortalEnabled: true,
+        status: true,
+      },
+    });
     const normalizedIdentifier = identifier.toLowerCase();
 
     return (

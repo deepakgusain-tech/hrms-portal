@@ -1,7 +1,5 @@
 "use server";
 
-import { promises as fs } from "fs";
-import path from "path";
 import { revalidatePath } from "next/cache";
 
 import { auth } from "@/auth";
@@ -9,6 +7,7 @@ import { interviewDefaultValues } from "@/lib/constants";
 import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
 import { APP_NAME } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
+import { mapInterviewRecord, toInterviewRecordDbInput } from "@/lib/recruitment-db";
 import { sendSystemEmail } from "@/lib/email";
 import { formatError } from "@/lib/utils";
 import { interviewSchema } from "@/lib/validators";
@@ -95,32 +94,16 @@ export type SelectedInterviewCandidateOption = {
   sourceInterviewApplicantId: string;
 };
 
-const dataFilePath = path.join(process.cwd(), "lib", "data", "interviews.json");
-
-async function ensureDataFile() {
-  try {
-    await fs.access(dataFilePath);
-  } catch {
-    await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
-    await fs.writeFile(dataFilePath, "[]", "utf8");
-  }
-}
-
 async function readInterviewData(): Promise<InterviewRecord[]> {
-  await ensureDataFile();
-  const raw = await fs.readFile(dataFilePath, "utf8");
-
   try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as InterviewRecord[]) : [];
+    const records = await prisma.interviewRecord.findMany({
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+    });
+
+    return records.map(mapInterviewRecord);
   } catch {
     return [];
   }
-}
-
-async function writeInterviewData(data: InterviewRecord[]) {
-  await ensureDataFile();
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2), "utf8");
 }
 
 function getInterviewNumber(record: InterviewRecord) {
@@ -632,8 +615,6 @@ export async function createInterview(
       };
     }
 
-    const previousPipelineStatus = applicant.data.pipelineStatus || "APPLIED";
-
     const records = await readInterviewData();
     const latestApplicantInterview = getLatestApplicantInterview(records, parsed.applicantId);
     const applicantInterviewId = getApplicantInterviewId(records, parsed.applicantId);
@@ -673,31 +654,27 @@ export async function createInterview(
       records,
     );
 
-    records.push(nextRecord);
-    await writeInterviewData(records);
+    await prisma.interviewRecord.create({
+      data: toInterviewRecordDbInput(nextRecord),
+    });
+
     await syncApplicantPipelineFromInterview(nextRecord);
 
+    let emailFailureMessage = "";
     try {
       await notifyInterviewScheduled(nextRecord, applicant.data.email);
     } catch (error) {
-      records.pop();
-      await writeInterviewData(records);
-      await updateRecruitmentIntakePipelineStatus(
-        parsed.applicantId,
-        previousPipelineStatus,
-      );
-
-      return {
-        success: false,
-        message: `Interview saved but notification email could not be sent: ${formatError(error)}`,
-      };
+      emailFailureMessage = formatError(error);
+      console.error("Interview notification email failed:", error);
     }
 
     revalidatePath("/interviews");
 
     return {
       success: true,
-      message: "Interview scheduled successfully",
+      message: emailFailureMessage
+        ? `Interview scheduled successfully, but the notification email could not be sent: ${emailFailureMessage}`
+        : "Interview scheduled successfully",
       data: nextRecord,
     };
   } catch (error) {
@@ -759,7 +736,7 @@ export async function updateInterview(
       );
     }
 
-    records[index] = normalizeInterviewRecord(
+    const nextRecord = normalizeInterviewRecord(
       {
         ...current,
         ...parsed,
@@ -775,8 +752,22 @@ export async function updateInterview(
       records,
     );
 
-    await writeInterviewData(records);
-    await syncApplicantPipelineFromInterview(records[index]);
+    const {
+      id: currentId,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = toInterviewRecordDbInput(nextRecord);
+    void currentId;
+    void createdAt;
+    void updatedAt;
+
+    await prisma.interviewRecord.update({
+      where: { id },
+      data: updateData,
+    });
+
+    await syncApplicantPipelineFromInterview(nextRecord);
 
     revalidatePath("/interviews");
     revalidatePath(`/interviews/edit/${id}`);
@@ -784,7 +775,7 @@ export async function updateInterview(
     return {
       success: true,
       message: "Interview updated successfully",
-      data: records[index],
+      data: nextRecord,
     };
   } catch (error) {
     return {
@@ -910,8 +901,21 @@ export async function submitInterviewFeedback(
       records,
     );
 
-    records[index] = nextRecord;
-    await writeInterviewData(records);
+    const {
+      id: currentId,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = toInterviewRecordDbInput(nextRecord);
+    void currentId;
+    void createdAt;
+    void updatedAt;
+
+    await prisma.interviewRecord.update({
+      where: { id },
+      data: updateData,
+    });
+
     await syncApplicantPipelineFromInterview(nextRecord);
 
     revalidatePath("/interviews");
@@ -970,8 +974,21 @@ export async function cancelInterview(
       records,
     );
 
-    records[index] = nextRecord;
-    await writeInterviewData(records);
+    const {
+      id: currentId,
+      createdAt,
+      updatedAt,
+      ...updateData
+    } = toInterviewRecordDbInput(nextRecord);
+    void currentId;
+    void createdAt;
+    void updatedAt;
+
+    await prisma.interviewRecord.update({
+      where: { id },
+      data: updateData,
+    });
+
     await syncApplicantPipelineFromInterview(nextRecord);
 
     revalidatePath("/interviews");
