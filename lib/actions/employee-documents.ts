@@ -2,9 +2,7 @@
 
 import { auth } from "@/auth";
 import { DocumentReviewStatus, Prisma } from "@prisma/client";
-import { promises as fs } from "fs";
 import { revalidatePath } from "next/cache";
-import path from "path";
 
 import { EmployeeDocument } from "@/types";
 import type { RecruitmentApplicantOption } from "./recruitment";
@@ -58,37 +56,129 @@ type ApplicantDocumentOption = {
   linkedEmployeeId: string;
 };
 
-const dataFilePath = path.join(
-  process.cwd(),
-  "lib",
-  "data",
-  "applicant-documents.json",
-);
-
-async function ensureDataFile() {
-  try {
-    await fs.access(dataFilePath);
-  } catch {
-    await fs.mkdir(path.dirname(dataFilePath), { recursive: true });
-    await fs.writeFile(dataFilePath, "[]", "utf8");
-  }
-}
-
 async function readApplicantDocumentData(): Promise<EmployeeDocument[]> {
-  await ensureDataFile();
-  const raw = await fs.readFile(dataFilePath, "utf8");
-
   try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as EmployeeDocument[]) : [];
+    const records = await prisma.employeeDocument.findMany({
+      where: {
+        documentOwnerType: "APPLICANT",
+      },
+      orderBy: { updatedAt: "desc" },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            employeeCode: true,
+            employeeName: true,
+          },
+        },
+      },
+    });
+
+    return records.map(mapPrismaEmployeeDocument);
   } catch {
     return [];
   }
 }
 
+function toDocumentReviewStatus(
+  status?: string,
+): DocumentReviewStatus {
+  if (status === "APPROVED") return DocumentReviewStatus.APPROVED;
+  if (status === "REJECTED") return DocumentReviewStatus.REJECTED;
+  if (status === "REUPLOAD_REQUESTED") return DocumentReviewStatus.REUPLOAD_REQUESTED;
+  return DocumentReviewStatus.PENDING;
+}
+
+function normalizeApplicantDocumentForPrisma(
+  input: EmployeeDocument,
+): Prisma.EmployeeDocumentUncheckedCreateInput {
+  const normalized = normalizeApplicantDocument(input);
+
+  return {
+    id: normalized.id,
+    documentOwnerType: "APPLICANT",
+    applicantId: normalized.applicantId || null,
+    candidateName: normalized.candidateName || null,
+    employeeId: null,
+    employeeCode: normalized.employeeCode || "",
+    aadhaarNumber: normalized.aadhaarNumber,
+    aadhaarFileUrl: normalized.aadhaarFileUrl || null,
+    panNumber: normalized.panNumber,
+    panFileUrl: normalized.panFileUrl || null,
+    educationEntries: (normalized.educationEntries ?? []) as Prisma.InputJsonValue,
+    experienceType: normalized.experienceType,
+    experienceEntries: (normalized.experienceEntries ?? []) as Prisma.InputJsonValue,
+    reviewStatus: toDocumentReviewStatus(normalized.reviewStatus),
+    reviewRemark: normalized.reviewRemark || null,
+    reviewedAt: normalized.reviewedAt ? new Date(normalized.reviewedAt) : null,
+    remark: normalized.remark || null,
+    status: normalized.status,
+    documentPayload: normalized as Prisma.InputJsonValue,
+  };
+}
+
 async function writeApplicantDocumentData(data: EmployeeDocument[]) {
-  await ensureDataFile();
-  await fs.writeFile(dataFilePath, JSON.stringify(data, null, 2), "utf8");
+  const nextRecords = data.map(normalizeApplicantDocument);
+  const nextIds = nextRecords.map((record) => record.id).filter(Boolean) as string[];
+
+  await prisma.$transaction(async (tx) => {
+    const existingRecords = await tx.employeeDocument.findMany({
+      where: {
+        documentOwnerType: "APPLICANT",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    for (const record of nextRecords) {
+      const payload = normalizeApplicantDocumentForPrisma(record);
+
+      await tx.employeeDocument.upsert({
+        where: { id: record.id ?? "" },
+        update: {
+          documentOwnerType: payload.documentOwnerType,
+          applicantId: payload.applicantId,
+          candidateName: payload.candidateName,
+          employeeId: null,
+          employeeCode: payload.employeeCode,
+          aadhaarNumber: payload.aadhaarNumber,
+          aadhaarFileUrl: payload.aadhaarFileUrl,
+          panNumber: payload.panNumber,
+          panFileUrl: payload.panFileUrl,
+          educationEntries: payload.educationEntries,
+          experienceType: payload.experienceType,
+          experienceEntries: payload.experienceEntries,
+          reviewStatus: payload.reviewStatus,
+          reviewRemark: payload.reviewRemark,
+          reviewedAt: payload.reviewedAt,
+          remark: payload.remark,
+          status: payload.status,
+          documentPayload: payload.documentPayload,
+        },
+        create: {
+          ...payload,
+          createdAt: record.createdAt ? new Date(record.createdAt) : undefined,
+          updatedAt: record.updatedAt ? new Date(record.updatedAt) : undefined,
+        },
+      });
+    }
+
+    const idsToDelete = existingRecords
+      .map((record) => record.id)
+      .filter((id) => !nextIds.includes(id));
+
+    if (idsToDelete.length) {
+      await tx.employeeDocument.deleteMany({
+        where: {
+          documentOwnerType: "APPLICANT",
+          id: {
+            in: idsToDelete,
+          },
+        },
+      });
+    }
+  });
 }
 
 async function getCurrentDocumentContext(): Promise<CurrentDocumentContext> {

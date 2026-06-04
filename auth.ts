@@ -4,8 +4,6 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./lib/prisma";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
-import { promises as fs } from "fs";
-import path from "path";
 
 const NextAuth = (NextAuthModule as any).default ?? NextAuthModule;
 
@@ -23,19 +21,28 @@ type RecruitmentApplicantAuthRecord = {
 async function readRecruitmentApplicantsForAuth(): Promise<
   RecruitmentApplicantAuthRecord[]
 > {
-  const dataFilePath = path.join(
-    process.cwd(),
-    "lib",
-    "data",
-    "recruitment-applications.json",
-  );
-
   try {
-    const raw = await fs.readFile(dataFilePath, "utf8");
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? (parsed as RecruitmentApplicantAuthRecord[])
-      : [];
+    const records = await prisma.recruitmentApplication.findMany({
+      select: {
+        id: true,
+        candidateName: true,
+        email: true,
+        applicantPortalId: true,
+        applicantUsername: true,
+        applicantPasswordHash: true,
+        applicantPortalEnabled: true,
+        status: true,
+      },
+    });
+
+    return records.map((record) => ({
+      ...record,
+      email: record.email ?? undefined,
+      applicantPortalId: record.applicantPortalId ?? undefined,
+      applicantUsername: record.applicantUsername ?? undefined,
+      applicantPasswordHash: record.applicantPasswordHash ?? undefined,
+      status: record.status ?? undefined,
+    }));
   } catch {
     return [];
   }
