@@ -85,12 +85,11 @@ async function readApplicantDocumentData(): Promise<EmployeeDocument[]> {
   }
 }
 
-function toDocumentReviewStatus(
-  status?: string,
-): DocumentReviewStatus {
+function toDocumentReviewStatus(status?: string): DocumentReviewStatus {
   if (status === "APPROVED") return DocumentReviewStatus.APPROVED;
   if (status === "REJECTED") return DocumentReviewStatus.REJECTED;
-  if (status === "REUPLOAD_REQUESTED") return DocumentReviewStatus.REUPLOAD_REQUESTED;
+  if (status === "REUPLOAD_REQUESTED")
+    return DocumentReviewStatus.REUPLOAD_REQUESTED;
   return DocumentReviewStatus.PENDING;
 }
 
@@ -110,21 +109,29 @@ function normalizeApplicantDocumentForPrisma(
     aadhaarFileUrl: normalized.aadhaarFileUrl || null,
     panNumber: normalized.panNumber,
     panFileUrl: normalized.panFileUrl || null,
-    educationEntries: (normalized.educationEntries ?? []) as Prisma.InputJsonValue,
+    educationEntries: (normalized.educationEntries ??
+      []) as Prisma.InputJsonValue,
     experienceType: normalized.experienceType,
-    experienceEntries: (normalized.experienceEntries ?? []) as Prisma.InputJsonValue,
+    experienceEntries: (normalized.experienceEntries ??
+      []) as Prisma.InputJsonValue,
     reviewStatus: toDocumentReviewStatus(normalized.reviewStatus),
     reviewRemark: normalized.reviewRemark || null,
     reviewedAt: normalized.reviewedAt ? new Date(normalized.reviewedAt) : null,
     remark: normalized.remark || null,
     status: normalized.status,
-    documentPayload: normalized as Prisma.InputJsonValue,
-  };
+    documentPayload: {
+  applicantId: normalized.applicantId,
+  applicantCode: normalized.applicantCode,
+  candidateName: normalized.candidateName,
+} as Prisma.InputJsonValue,
+  };   
 }
 
 async function writeApplicantDocumentData(data: EmployeeDocument[]) {
   const nextRecords = data.map(normalizeApplicantDocument);
-  const nextIds = nextRecords.map((record) => record.id).filter(Boolean) as string[];
+  const nextIds = nextRecords
+    .map((record) => record.id)
+    .filter(Boolean) as string[];
 
   await prisma.$transaction(async (tx) => {
     const existingRecords = await tx.employeeDocument.findMany({
@@ -238,7 +245,8 @@ async function getCurrentDocumentContext(): Promise<CurrentDocumentContext> {
     currentApplicant: applicantRecord
       ? {
           id: applicantRecord.id ?? "",
-          applicantCode: applicantRecord.requestId || applicantRecord.serialNumber || "",
+          applicantCode:
+            applicantRecord.requestId || applicantRecord.serialNumber || "",
           candidateName: applicantRecord.candidateName,
         }
       : null,
@@ -251,7 +259,9 @@ function isSelfServiceEmployeeContext(
   isEmployee: true;
   currentEmployee: NonNullable<CurrentDocumentContext["currentEmployee"]>;
 } {
-  return context.isEmployee && !context.isHrEmployee && !!context.currentEmployee;
+  return (
+    context.isEmployee && !context.isHrEmployee && !!context.currentEmployee
+  );
 }
 
 function isApplicantContext(
@@ -287,12 +297,15 @@ function mapPrismaEmployeeDocument(
     record.documentOwnerType ?? (record.employeeId ? "EMPLOYEE" : "APPLICANT");
   const ownerName =
     documentOwnerType === "EMPLOYEE"
-      ? record.employee?.employeeName ?? payload.candidateName ?? ""
-      : record.candidateName ?? payload.candidateName ?? "";
+      ? (record.employee?.employeeName ?? payload.candidateName ?? "")
+      : (record.candidateName ?? payload.candidateName ?? "");
   const ownerCode =
     documentOwnerType === "EMPLOYEE"
-      ? record.employee?.employeeCode ?? record.employeeCode ?? ""
-      : payload.applicantCode ?? record.applicantId ?? payload.applicantId ?? "";
+      ? (record.employee?.employeeCode ?? record.employeeCode ?? "")
+      : (payload.applicantCode ??
+        record.applicantId ??
+        payload.applicantId ??
+        "");
 
   return {
     ...payload,
@@ -305,7 +318,11 @@ function mapPrismaEmployeeDocument(
     applicantCode: payload.applicantCode ?? "",
     candidateName: record.candidateName ?? payload.candidateName ?? "",
     employeeId: record.employeeId ?? "",
-    employeeCode: record.employee?.employeeCode ?? payload.employeeCode ?? record.employeeCode ?? "",
+    employeeCode:
+      record.employee?.employeeCode ??
+      payload.employeeCode ??
+      record.employeeCode ??
+      "",
     employeeName: record.employee?.employeeName ?? payload.employeeName ?? "",
     aadhaarNumber: record.aadhaarNumber ?? payload.aadhaarNumber ?? "",
     aadhaarFileUrl: record.aadhaarFileUrl ?? payload.aadhaarFileUrl ?? "",
@@ -314,7 +331,8 @@ function mapPrismaEmployeeDocument(
     educationEntries: Array.isArray(record.educationEntries)
       ? (record.educationEntries as EmployeeDocument["educationEntries"])
       : (payload.educationEntries ?? []),
-    experienceType: record.experienceType ?? payload.experienceType ?? "FRESHER",
+    experienceType:
+      record.experienceType ?? payload.experienceType ?? "FRESHER",
     experienceEntries: Array.isArray(record.experienceEntries)
       ? (record.experienceEntries as EmployeeDocument["experienceEntries"])
       : (payload.experienceEntries ?? []),
@@ -456,7 +474,8 @@ function buildApplicantDocumentReviewEmail(
     "",
     "Document statuses:",
     ...completedFields.map(
-      (field) => `- ${field.label}: ${formatDocumentVerificationStatus(field.status)}`,
+      (field) =>
+        `- ${field.label}: ${formatDocumentVerificationStatus(field.status)}`,
     ),
     "",
     `Reviewed by: ${reviewerName}`,
@@ -540,7 +559,9 @@ function normalizeEmployeeDocumentForPrisma(
   };
 }
 
-async function getApplicantDocumentOptionsBase(): Promise<ApplicantDocumentOption[]> {
+async function getApplicantDocumentOptionsBase(): Promise<
+  ApplicantDocumentOption[]
+> {
   const [documentRecords, recruitmentRecords] = await Promise.all([
     readApplicantDocumentData(),
     getRecruitmentApplications(),
@@ -569,10 +590,7 @@ async function getApplicantDocumentOptionsBase(): Promise<ApplicantDocumentOptio
         email: recruitmentRecord?.email ?? "",
         gender: record.gender ?? "",
         dateOfBirth: record.dateOfBirth ?? "",
-        address:
-          record.currentAddress ||
-          record.permanentAddress ||
-          "",
+        address: record.currentAddress || record.permanentAddress || "",
         emergencyContactName: record.emergencyContactName ?? "",
         emergencyContactPhone: record.emergencyContactNumber ?? "",
         reviewStatus: record.reviewStatus ?? "PENDING",
@@ -626,7 +644,9 @@ export async function attachApplicantDocumentToEmployeeProfile(params: {
     applicantDocument.linkedEmployeeId &&
     applicantDocument.linkedEmployeeId !== params.employeeId
   ) {
-    throw new Error("This applicant document is already connected to another employee");
+    throw new Error(
+      "This applicant document is already connected to another employee",
+    );
   }
 
   await client.employeeDocument.create({
@@ -637,11 +657,11 @@ export async function attachApplicantDocumentToEmployeeProfile(params: {
       aadhaarFileUrl: applicantDocument.aadhaarFileUrl || null,
       panNumber: applicantDocument.panNumber,
       panFileUrl: applicantDocument.panFileUrl || null,
-      educationEntries:
-        (applicantDocument.educationEntries ?? []) as Prisma.InputJsonValue,
+      educationEntries: (applicantDocument.educationEntries ??
+        []) as Prisma.InputJsonValue,
       experienceType: applicantDocument.experienceType,
-      experienceEntries:
-        (applicantDocument.experienceEntries ?? []) as Prisma.InputJsonValue,
+      experienceEntries: (applicantDocument.experienceEntries ??
+        []) as Prisma.InputJsonValue,
       reviewStatus:
         applicantDocument.reviewStatus === "APPROVED"
           ? DocumentReviewStatus.APPROVED
@@ -766,7 +786,10 @@ export async function createEmployeeDocument(
       });
 
       await prisma.employeeDocument.create({
-        data: normalizeEmployeeDocumentForPrisma(record, context.currentEmployee),
+        data: normalizeEmployeeDocumentForPrisma(
+          record,
+          context.currentEmployee,
+        ),
       });
 
       revalidatePath("/employee-documents");
@@ -807,6 +830,9 @@ export async function createEmployeeDocument(
       message: "Applicant document created successfully",
     };
   } catch (error) {
+    console.error("CREATE DOCUMENT ERROR");
+    console.error(error);
+
     return {
       success: false,
       message: formatError(error),
@@ -888,6 +914,9 @@ export async function getEmployeeDocumentById(id: string) {
       message: "Applicant document fetched successfully",
     };
   } catch (error) {
+    console.error("CREATE DOCUMENT ERROR");
+    console.error(error);
+
     return {
       success: false,
       message: formatError(error),
@@ -912,7 +941,8 @@ export async function updateEmployeeDocument(
       });
       const records = await readApplicantDocumentData();
       const index = records.findIndex(
-        (item) => item.id === id && item.applicantId === context.currentApplicant.id,
+        (item) =>
+          item.id === id && item.applicantId === context.currentApplicant.id,
       );
 
       if (index === -1) {
@@ -974,7 +1004,10 @@ export async function updateEmployeeDocument(
 
       await prisma.employeeDocument.update({
         where: { id },
-        data: normalizeEmployeeDocumentForPrisma(record, context.currentEmployee),
+        data: normalizeEmployeeDocumentForPrisma(
+          record,
+          context.currentEmployee,
+        ),
       });
 
       revalidatePath("/employee-documents");
@@ -1024,6 +1057,9 @@ export async function updateEmployeeDocument(
       message: "Applicant document updated successfully",
     };
   } catch (error) {
+    console.error("CREATE DOCUMENT ERROR");
+    console.error(error);
+
     return {
       success: false,
       message: formatError(error),
@@ -1098,9 +1134,9 @@ export async function reviewEmployeeDocument(
         rawStatus as DocumentVerificationStatus;
     }
 
-    const reviewedFields = getUploadedReviewableDocumentFields(updatedRecord).filter(
-      (field) => field.uploaded || field.status !== "PENDING_REVIEW",
-    );
+    const reviewedFields = getUploadedReviewableDocumentFields(
+      updatedRecord,
+    ).filter((field) => field.uploaded || field.status !== "PENDING_REVIEW");
 
     if (!reviewedFields.length) {
       return {
@@ -1168,6 +1204,9 @@ export async function reviewEmployeeDocument(
               : "Document rejected, but the applicant email could not be sent",
     };
   } catch (error) {
+    console.error("CREATE DOCUMENT ERROR");
+    console.error(error);
+
     return {
       success: false,
       message: formatError(error),
@@ -1213,6 +1252,9 @@ export async function deleteEmployeeDocument(
       message: "Applicant document deleted successfully",
     };
   } catch (error) {
+    console.error("CREATE DOCUMENT ERROR");
+    console.error(error);
+
     return {
       success: false,
       message: formatError(error),

@@ -23,53 +23,110 @@ export const getEmployeeDocumentColumns = ({
     {
       id: "ownerName",
       header: "Name",
+      size: 180,
       cell: ({ row }) =>
-        row.original.ownerName ||
-        row.original.employeeName ||
-        row.original.candidateName ||
-        "-",
+        (
+          <span
+            className="block max-w-[180px] truncate"
+            title={
+              row.original.ownerName ||
+              row.original.employeeName ||
+              row.original.candidateName ||
+              "-"
+            }
+          >
+            {row.original.ownerName ||
+              row.original.employeeName ||
+              row.original.candidateName ||
+              "-"}
+          </span>
+        ),
     },
     {
       id: "ownerCode",
       header: "Employee / Applicant ID",
+      size: 220,
       cell: ({ row }) =>
-        row.original.ownerCode ||
-        row.original.employeeCode ||
-        row.original.applicantCode ||
-        row.original.applicantId ||
-        "-",
+        (
+          <span
+            className="block max-w-[220px] truncate font-mono text-[13px]"
+            title={
+              row.original.ownerCode ||
+              row.original.employeeCode ||
+              row.original.applicantCode ||
+              row.original.applicantId ||
+              "-"
+            }
+          >
+            {row.original.ownerCode ||
+              row.original.employeeCode ||
+              row.original.applicantCode ||
+              row.original.applicantId ||
+              "-"}
+          </span>
+        ),
     },
     {
       accessorKey: "dateOfBirth",
       header: "DOB",
+      size: 120,
       cell: ({ row }) => row.original.dateOfBirth || "-",
     },
     {
       accessorKey: "mobileNumber",
       header: "Mobile Number",
+      size: 150,
       cell: ({ row }) => row.original.mobileNumber || "-",
     },
     {
       accessorKey: "qualification",
       header: "Qualification",
+      size: 180,
       cell: ({ row }) => row.original.qualification || "-",
     },
     {
       accessorKey: "experienceType",
       header: "Experience Type",
-      cell: ({ row }) => row.original.experienceType.replaceAll("_", " "),
+      size: 160,
+      cell: ({ row }) => (
+        <span
+          className="block max-w-[160px] truncate"
+          title={row.original.experienceType?.replaceAll("_", " ") || "-"}
+        >
+          {row.original.experienceType?.replaceAll("_", " ") || "-"}
+        </span>
+      ),
     },
     {
       accessorKey: "aadhaarNumber",
       header: "Aadhaar Number",
+      size: 180,
+      cell: ({ row }) => (
+        <span
+          className="block max-w-[180px] truncate font-mono text-[13px]"
+          title={row.original.aadhaarNumber || "-"}
+        >
+          {row.original.aadhaarNumber || "-"}
+        </span>
+      ),
     },
     {
       accessorKey: "panNumber",
       header: "PAN Number",
+      size: 160,
+      cell: ({ row }) => (
+        <span
+          className="block max-w-[160px] truncate font-mono text-[13px]"
+          title={row.original.panNumber || "-"}
+        >
+          {row.original.panNumber || "-"}
+        </span>
+      ),
     },
     {
       accessorKey: "reviewStatus",
       header: "Review",
+      size: 140,
       cell: ({ row }) => (
         <Badge
           className={getDocumentReviewBadgeClass(
@@ -83,7 +140,15 @@ export const getEmployeeDocumentColumns = ({
     {
       accessorKey: "reviewRemark",
       header: "Review Remark",
-      cell: ({ row }) => row.original.reviewRemark || "-",
+      size: 280,
+      cell: ({ row }) => (
+        <span
+          className="block max-w-[280px] truncate"
+          title={row.original.reviewRemark || "-"}
+        >
+          {row.original.reviewRemark || "-"}
+        </span>
+      ),
     },
   ];
 
@@ -91,11 +156,12 @@ export const getEmployeeDocumentColumns = ({
     columns.push({
       id: "actions",
       header: "Action",
+      size: 170,
       cell: ({ row }) => {
         const id = row.original.id as string;
 
         return (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-nowrap items-center gap-2">
             <Button
               size="icon"
               variant="outline"
