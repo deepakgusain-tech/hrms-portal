@@ -79,14 +79,13 @@ function buildInitialStatuses(document: EmployeeDocument | null) {
   );
 }
 
-function previewLinkLabel(value: string) {
-  return value.startsWith("data:") ? "Open uploaded file" : "Open file";
+function previewLinkLabel() {
+  return "Open file";
 }
 
 function isImagePreview(field: ReviewEntry) {
   return (
     field.previewKind === "image" ||
-    field.fileUrl.startsWith("data:image/") ||
     /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(field.fileUrl)
   );
 }
@@ -135,7 +134,7 @@ function ReviewableFileCard({
               className="inline-flex items-center gap-2 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm font-medium text-cyan-700"
             >
               <FileText className="h-4 w-4" />
-              {previewLinkLabel(field.fileUrl)}
+              {previewLinkLabel()}
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
           )
@@ -531,15 +530,25 @@ export function EmployeeDocumentReviewSheet({
                 Submit Review
               </Button>
               {document.reviewStatus === "APPROVED" &&
+              !document.linkedTraineeId &&
               !document.linkedEmployeeId ? (
                 <Button asChild className="bg-cyan-600 hover:bg-cyan-700">
                   <Link
-                    href={`/employee-profiles/create?sourceApplicantDocumentId=${document.id}`}
+                    href={`/trainees/create?applicantDocumentId=${document.id}`}
                   >
                     <UserPlus className="mr-2 h-4 w-4" />
-                    Create Employee
+                    Create Trainee
                   </Link>
                 </Button>
+              ) : document.reviewStatus === "APPROVED" &&
+                (document.linkedTraineeId || document.linkedEmployeeId) ? (
+                <div className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-700">
+                  {document.linkedTraineeCode
+                    ? `Linked to ${document.linkedTraineeCode}`
+                    : document.linkedEmployeeCode
+                      ? `Linked to ${document.linkedEmployeeCode}`
+                      : "Converted"}
+                </div>
               ) : null}
               <Button
                 variant="destructive"

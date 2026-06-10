@@ -11,7 +11,12 @@ import { getApplicantDocumentOptionsForEmployeeCreation } from "@/lib/actions/em
 import { getRecruitmentApplicationById } from "@/lib/actions/recruitment";
 import { employeeProfileDefaultValues } from "@/lib/constants";
 import { employeeProfileSchema } from "@/lib/validators";
-import { EmployeeProfile, RecruitmentApplication } from "@/types";
+import {
+  EmployeeDocument,
+  EmployeeProfile,
+  RecruitmentApplication,
+  Trainee,
+} from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowRight, FileCheck2, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -44,6 +49,8 @@ type Props = {
   update: boolean;
   initialRecruitmentId?: string;
   initialApplicantDocumentId?: string;
+  initialApplicantDocument?: EmployeeDocument | null;
+  initialTrainee?: Trainee | null;
 };
 
 type Option = {
@@ -74,8 +81,55 @@ type ApplicantDocumentOption = {
   address: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
+  emergencyContactNumber?: string;
   reviewStatus: string;
   linkedEmployeeId: string;
+  currentAddress?: string;
+  permanentAddress?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+};
+
+type ApplicantDocumentPrefillSource = {
+  id: string;
+  requestId?: string | null;
+  candidateName?: string | null;
+  email?: string | null;
+  mobileNumber?: string | null;
+  gender?: string | null;
+  dateOfBirth?: string | null;
+  address?: string | null;
+  currentAddress?: string | null;
+  permanentAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  emergencyContactNumber?: string | null;
+};
+
+type TraineePrefillSource = {
+  id: string;
+  traineeCode?: string | null;
+  applicantId?: string | null;
+  fullName?: string | null;
+  email?: string | null;
+  mobileNumber?: string | null;
+  gender?: string | null;
+  dateOfBirth?: string | null;
+  address?: string | null;
+  currentAddress?: string | null;
+  permanentAddress?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postalCode?: string | null;
+  emergencyContactName?: string | null;
+  emergencyContactPhone?: string | null;
+  educationEntries?: unknown[];
+  experienceEntries?: unknown[];
+  uploadedDocumentUrls?: string[];
 };
 
 const NONE_VALUE = "none";
@@ -88,11 +142,100 @@ const fieldClass =
 const textAreaClass =
   "min-h-28 w-full rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-cyan-300 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 outline-none";
 
+function buildApplicantDocumentAddress(
+  document: Pick<
+    ApplicantDocumentPrefillSource,
+    "address" | "currentAddress" | "permanentAddress" | "city" | "state" | "postalCode"
+  >,
+) {
+  if (document.address?.trim()) {
+    return document.address.trim();
+  }
+
+  if (document.currentAddress?.trim()) {
+    return document.currentAddress.trim();
+  }
+
+  if (document.permanentAddress?.trim()) {
+    return document.permanentAddress.trim();
+  }
+
+  return [document.city, document.state, document.postalCode]
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
+function buildApplicantDocumentPrefill(
+  document: ApplicantDocumentPrefillSource,
+) {
+  return {
+    sourceApplicantDocumentId: document.id,
+    employeeName: document.candidateName || "",
+    email: document.email || "",
+    phone: document.mobileNumber || "",
+    gender: document.gender || "",
+    dateOfBirth: document.dateOfBirth || "",
+    address: buildApplicantDocumentAddress(document),
+    emergencyContactName: document.emergencyContactName || "",
+    emergencyContactPhone:
+      document.emergencyContactPhone ||
+      document.emergencyContactNumber ||
+      "",
+  };
+}
+
+function buildTraineePrefill(document: TraineePrefillSource) {
+  return {
+    sourceTraineeId: document.id,
+    employeeName: document.fullName || "",
+    email: document.email || "",
+    phone: document.mobileNumber || "",
+    gender: document.gender || "",
+    dateOfBirth: document.dateOfBirth || "",
+    address: buildApplicantDocumentAddress(document),
+    emergencyContactName: document.emergencyContactName || "",
+    emergencyContactPhone: document.emergencyContactPhone || "",
+  };
+}
+
+function toApplicantDocumentPrefillSource(
+  document: ApplicantDocumentOption | EmployeeDocument,
+): ApplicantDocumentPrefillSource {
+  return {
+    id: document.id ?? "",
+    requestId: "requestId" in document ? document.requestId : undefined,
+    candidateName: document.candidateName ?? "",
+    email: document.email ?? "",
+    mobileNumber: document.mobileNumber ?? "",
+    gender: document.gender ?? "",
+    dateOfBirth: document.dateOfBirth ?? "",
+    address: "address" in document ? document.address ?? "" : "",
+    currentAddress: "currentAddress" in document ? document.currentAddress : "",
+    permanentAddress:
+      "permanentAddress" in document ? document.permanentAddress : "",
+    city: "city" in document ? document.city : "",
+    state: "state" in document ? document.state : "",
+    postalCode: "postalCode" in document ? document.postalCode : "",
+    emergencyContactName: document.emergencyContactName ?? "",
+    emergencyContactPhone:
+      "emergencyContactPhone" in document
+        ? document.emergencyContactPhone
+        : "",
+    emergencyContactNumber:
+      "emergencyContactNumber" in document
+        ? document.emergencyContactNumber
+        : "",
+  };
+}
+
 const EmployeeProfileForm = ({
   data,
   update,
   initialRecruitmentId,
   initialApplicantDocumentId,
+  initialApplicantDocument,
+  initialTrainee,
 }: Props) => {
   const router = useRouter();
   const id = data?.id;
@@ -120,28 +263,31 @@ const EmployeeProfileForm = ({
   });
   const selectedApplicantDocument = React.useMemo(
     () =>
-      applicantDocuments.find(
-        (item) => item.id === selectedApplicantDocumentId,
-      ) ?? null,
+      applicantDocuments.find((item) => item.id === selectedApplicantDocumentId) ??
+      null,
     [applicantDocuments, selectedApplicantDocumentId],
   );
 
   const applyApplicantDocumentValues = React.useCallback(
-    (document: ApplicantDocumentOption) => {
-      form.setValue("sourceApplicantDocumentId", document.id);
-      form.setValue("employeeName", document.candidateName || "");
-      form.setValue("email", document.email || "");
-      form.setValue("phone", document.mobileNumber || "");
-      form.setValue("gender", document.gender || "");
-      form.setValue("dateOfBirth", document.dateOfBirth || "");
-      form.setValue("address", document.address || "");
-      form.setValue(
-        "emergencyContactName",
-        document.emergencyContactName || "",
+    (document: ApplicantDocumentOption | EmployeeDocument) => {
+      const prefill = buildApplicantDocumentPrefill(
+        toApplicantDocumentPrefillSource(document),
       );
+
+      form.setValue(
+        "sourceApplicantDocumentId",
+        prefill.sourceApplicantDocumentId,
+      );
+      form.setValue("employeeName", prefill.employeeName);
+      form.setValue("email", prefill.email);
+      form.setValue("phone", prefill.phone);
+      form.setValue("gender", prefill.gender);
+      form.setValue("dateOfBirth", prefill.dateOfBirth);
+      form.setValue("address", prefill.address);
+      form.setValue("emergencyContactName", prefill.emergencyContactName);
       form.setValue(
         "emergencyContactPhone",
-        document.emergencyContactPhone || "",
+        prefill.emergencyContactPhone,
       );
     },
     [form],
@@ -152,6 +298,47 @@ const EmployeeProfileForm = ({
       form.reset(data);
     }
   }, [data, form]);
+
+  useEffect(() => {
+    if (update || !initialTrainee) {
+      return;
+    }
+
+    const prefill = buildTraineePrefill({
+      id: initialTrainee.id ?? "",
+      fullName: initialTrainee.fullName,
+      email: initialTrainee.email,
+      mobileNumber: initialTrainee.mobileNumber,
+      gender: initialTrainee.gender,
+      dateOfBirth: initialTrainee.dateOfBirth,
+      address: initialTrainee.address,
+      currentAddress: initialTrainee.currentAddress,
+      permanentAddress: initialTrainee.permanentAddress,
+      city: initialTrainee.city,
+      state: initialTrainee.state,
+      postalCode: initialTrainee.postalCode,
+      emergencyContactName: initialTrainee.emergencyContactName,
+      emergencyContactPhone: initialTrainee.emergencyContactPhone,
+    });
+
+    form.setValue("sourceTraineeId", prefill.sourceTraineeId);
+    form.setValue("employeeName", prefill.employeeName);
+    form.setValue("email", prefill.email);
+    form.setValue("phone", prefill.phone);
+    form.setValue("gender", prefill.gender);
+    form.setValue("dateOfBirth", prefill.dateOfBirth);
+    form.setValue("address", prefill.address);
+    form.setValue("emergencyContactName", prefill.emergencyContactName);
+    form.setValue("emergencyContactPhone", prefill.emergencyContactPhone);
+  }, [form, initialTrainee, update]);
+
+  useEffect(() => {
+    if (update || !initialApplicantDocument) {
+      return;
+    }
+
+    applyApplicantDocumentValues(initialApplicantDocument);
+  }, [applyApplicantDocumentValues, initialApplicantDocument, update]);
 
   useEffect(() => {
     getEmployeeProfileOptions().then((options) => {
@@ -195,7 +382,9 @@ const EmployeeProfileForm = ({
     const linkedApplicantDocument = initialApplicantDocumentId
       ? applicantDocuments.find((item) => item.id === initialApplicantDocumentId)
       : initialRecruitmentId
-        ? applicantDocuments.find((item) => item.applicantId === initialRecruitmentId)
+        ? applicantDocuments.find(
+            (item) => item.applicantId === initialRecruitmentId,
+          )
         : null;
 
     if (linkedApplicantDocument) {

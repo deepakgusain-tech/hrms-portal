@@ -85,7 +85,7 @@ model User {
   role                Role      @relation(fields: [roleId], references: [id])
 
   reviewedLeaveRequests     LeaveRequest[]
-  reviewedEmployeeDocuments EmployeeDocument[]
+  reviewedEmployeeDocuments ApplicantDocument[]
 
   @@index([resetTokenHash])
 }
@@ -194,12 +194,13 @@ model TransferPromotion {
   toLocation   WorkLocation?   @relation("TransferToLocation", fields: [toLocationId], references: [id])
 }
 
-model EmployeeDocument {
+model ApplicantDocument {
   id                String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   documentOwnerType EmployeeDocumentOwnerType @default(EMPLOYEE)
   applicantId       String?
   candidateName     String?
   employeeId        String?                   @db.Uuid
+  traineeId         String?                   @db.Uuid
   employeeCode      String
 
   // ---------------- DOCUMENTS ----------------
@@ -229,6 +230,8 @@ model EmployeeDocument {
 
   employee   EmployeeProfile? @relation(fields: [employeeId], references: [id])
   reviewedBy User?            @relation(fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@map("EmployeeDocument")
 }
 
 model RecruitmentIntake {
@@ -245,75 +248,6 @@ model RecruitmentIntake {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@index([pipelineStatus])
-  @@index([updatedAt])
-}
-
-model RecruitmentApplication {
-  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sourceInterviewApplicantId     String?   @unique @db.Uuid
-  applicantPortalId              String?   @unique
-  applicantUsername              String?   @unique
-  applicantPasswordHash          String?
-  applicantPortalEnabled         Boolean   @default(false)
-  applicantInvitedAt             DateTime?
-  applicantDocumentsSubmittedAt  DateTime?
-  serialNumber                   String?
-  requestId                      String?
-  clientProjectName              String?
-  requestReceivedDate            String?
-  requestApprovedBy              String?
-  hrOwnerEmployeeNumber          String?
-  hrOwnerName                    String?
-  businessOwnerEmployeeNumber    String?
-  businessOwnerName              String?
-  candidateName                  String
-  gender                         String?
-  dateOfBirth                    String?
-  mobileNumber                   String
-  email                          String?
-  currentLocation                String?
-  preferredLocation              String?
-  noticePeriod                   String?
-  qualification                  String?
-  skillsLevel                    String?
-  profilePost                    String
-  certification                  String?
-  totalExperience                String?
-  relevantExperience             String?
-  currentCompany                 String?
-  currentCtc                     String?
-  expectedCtc                    String?
-  offeredCtc                     String?
-  profileSource                  String?
-  profileReceiveDate             String?
-  internalScreeningDate          String?
-  internalScreeningCleared       String?
-  profileSentToBusinessOwner     String?
-  profileSentToBusinessOwnerDate String?
-  profileConnectWithClientDate   String?
-  interviewedByClient            String?
-  clientInterviewDate            String?
-  feedbackDate                   String?
-  internalStatus                 String?
-  clientFinalStatus              String?
-  pipelineStatus                 String?   @default("APPLIED")
-  updatedToCandidateDate         String?
-  offeredDate                    String?
-  offerAccepted                  String?
-  reasonIfOfferNotAccepted       String?
-  agreedJoiningDate              String?
-  joined                         String?
-  reasonIfNotJoined              String?
-  actualJoiningDate              String?
-  joiningDetailsShared           String?
-  joiningDetailsSharedDate       String?
-  remarks                        String?
-  status                         Status    @default(ACTIVE)
-  createdAt                      DateTime  @default(now())
-  updatedAt                      DateTime  @updatedAt
-
-  @@index([email])
   @@index([pipelineStatus])
   @@index([updatedAt])
 }
@@ -392,7 +326,7 @@ model EmployeeProfile {
   jobRole       JobRole?          @relation(fields: [jobRoleId], references: [id])
   workLocation  WorkLocation?     @relation(fields: [workLocationId], references: [id])
 
-  employeeDocuments        EmployeeDocument[]
+  employeeDocuments        ApplicantDocument[]
   transferPromotions       TransferPromotion[]
   createdProjects          Project[]
   projectMembers           ProjectMember[]
@@ -405,9 +339,152 @@ model EmployeeProfile {
   reviewedEodReports       EodReport[]         @relation("EodReviewedByManager")
   monthlyEodReviews        MonthlyEodReview[]
   managedMonthlyEodReviews MonthlyEodReview[]  @relation("MonthlyEodReviewedByManager")
+  sourceTraineeId           String?            @db.Uuid @unique
 
   @@index([managerId])
   @@index([resetTokenHash])
+}
+
+model Trainee {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  traineeCode           String   @unique
+  applicantId           String?  @db.Uuid
+  applicantDocumentId   String?  @db.Uuid @unique
+  fullName              String
+  email                 String   @unique
+  mobileNumber          String
+  gender                String?
+  dateOfBirth           DateTime?
+  address               String?
+  currentAddress        String?
+  permanentAddress      String?
+  city                  String?
+  state                 String?
+  postalCode            String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  educationEntries      Json?
+  experienceEntries     Json?
+  uploadedDocumentUrls  Json?
+  onboardingPayload     Json?
+  trainingBatch         String?
+  trainerName           String?
+  departmentId          String?  @db.Uuid
+  reportingManagerId    String?  @db.Uuid
+  trainingStartDate     DateTime?
+  trainingEndDate       DateTime?
+  traineeStatus         String   @default("PENDING")
+  trainingProgress      Int      @default(0)
+  attendancePercentage  Float?
+  assessmentScore       Float?
+  evaluationRecommendation String?
+  evaluationRemarks     String?
+  loginPassword         String?
+  employeeId            String?  @db.Uuid @unique
+  employeeCode          String?
+  employeeName          String?
+  convertedAt           DateTime?
+  status                Status   @default(ACTIVE)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  attendances       TraineeAttendance[]
+  tasks             TraineeTask[]
+  assessments       TraineeAssessment[]
+  evaluations       TraineeEvaluation[]
+  trainingMaterials TraineeTrainingMaterial[]
+
+  @@index([applicantId])
+  @@index([applicantDocumentId])
+  @@index([employeeId])
+  @@index([reportingManagerId])
+}
+
+model TraineeAttendance {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  traineeId    String   @db.Uuid
+  date         DateTime @db.Date
+  checkIn      DateTime?
+  checkOut     DateTime?
+  workingHours Float?
+  status       String   @default("ABSENT")
+  isLate       Boolean  @default(false)
+  isHalfDay    Boolean  @default(false)
+  remarks      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  trainee Trainee @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@unique([traineeId, date])
+  @@index([traineeId])
+}
+
+model TraineeTask {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  traineeId   String   @db.Uuid
+  title       String
+  description String?
+  dueDate     DateTime?
+  priority    String   @default("MEDIUM")
+  status      String   @default("TODO")
+  remarks     String?
+  submissionUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trainee Trainee @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@index([traineeId])
+}
+
+model TraineeAssessment {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  traineeId    String   @db.Uuid
+  assessmentName String
+  score        Float
+  maxScore     Float
+  remarks      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  trainee Trainee @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@index([traineeId])
+}
+
+model TraineeEvaluation {
+  id                    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  traineeId             String   @db.Uuid
+  technicalSkills       Int
+  communication         Int
+  learningAbility       Int
+  discipline            Int
+  teamwork              Int
+  problemSolving        Int
+  trainerRemarks        String?
+  recommendation        String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  trainee Trainee @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@index([traineeId])
+}
+
+model TraineeTrainingMaterial {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  traineeId   String?  @db.Uuid
+  title       String
+  description String?
+  materialType String
+  url         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  trainee Trainee? @relation(fields: [traineeId], references: [id], onDelete: SetNull)
+
+  @@index([traineeId])
 }
 
 model Module {

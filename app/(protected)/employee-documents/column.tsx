@@ -156,9 +156,10 @@ export const getEmployeeDocumentColumns = ({
     columns.push({
       id: "actions",
       header: "Action",
-      size: 170,
+      size: 270,
       cell: ({ row }) => {
         const id = row.original.id as string;
+        const linkedTraineeCode = row.original.linkedTraineeCode?.trim();
 
         return (
           <div className="flex flex-nowrap items-center gap-2">
@@ -186,6 +187,26 @@ export const getEmployeeDocumentColumns = ({
                 </Link>
               </Button>
             )}
+
+            {row.original.reviewStatus === "APPROVED" &&
+            row.original.linkedTraineeId ? (
+              <Badge className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+                {linkedTraineeCode
+                  ? `Linked to ${linkedTraineeCode}`
+                  : "Trainee Created"}
+              </Badge>
+            ) : row.original.reviewStatus === "APPROVED" &&
+              row.original.linkedEmployeeId ? (
+              <Badge className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+                Employee Created
+              </Badge>
+            ) : row.original.reviewStatus === "APPROVED" ? (
+              <Button asChild className="bg-cyan-600 hover:bg-cyan-700">
+                <Link href={`/trainees/create?applicantDocumentId=${id}`}>
+                  Create Trainee
+                </Link>
+              </Button>
+            ) : null}
 
             {canDelete && (
               <Button

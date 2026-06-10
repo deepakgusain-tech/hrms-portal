@@ -12,6 +12,12 @@ const employeeAllowedPaths = [
   "/attendance",
   "/leave-requests",
   "/transfer-promotion",
+
+  "/trainees",
+  "/trainee-dashboard",
+  "/recruitment",
+  "/recruitment-intake",
+  "/interviews",
 ];
 
 type AuthenticatedRequest = {
@@ -44,6 +50,8 @@ export default auth((req: AuthenticatedRequest) => {
     pathname.startsWith("/work-location") ||
     pathname.startsWith("/transfer-promotion") ||
     pathname.startsWith("/leave-requests") ||
+    pathname.startsWith("/trainees") ||
+    pathname.startsWith("/trainee-dashboard") ||
     pathname.startsWith("/attendance");
 
   if (!isProtectedRoute) {
@@ -88,5 +96,7 @@ export const config = {
     "/transfer-promotion/:path*",
     "/leave-requests/:path*",
     "/attendance/:path*",
+    "/trainees/:path*",
+    "/trainee-dashboard/:path*",
   ],
 };

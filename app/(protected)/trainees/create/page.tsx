@@ -1,84 +1,65 @@
-import EmployeeProfileForm from "@/components/employee-profiles/employee-profile-form";
+import TraineeForm from "@/components/trainees/trainee-form";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getApplicantDocumentById } from "@/lib/actions/employee-documents";
-import { getTraineeById } from "@/lib/actions/trainees";
-import { canAccess } from "@/lib/rbac";
 import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
-import type { EmployeeDocument, Trainee } from "@/types";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, UserPlus } from "lucide-react";
+import { getUserPermissions, isAdminRole } from "@/lib/rbac";
 
-const EmployeeProfileCreatePage = async ({
+const TraineeCreatePage = async ({
   searchParams,
 }: {
   searchParams?: Promise<{
-    recruitmentId?: string | string[];
     applicantDocumentId?: string | string[];
-    sourceApplicantDocumentId?: string | string[];
-    traineeId?: string | string[];
   }>;
 }) => {
-  const route = "/employee-profiles";
-  const [canCreateByRole, isHrEmployee] = await Promise.all([
-    canAccess(route, "create"),
-    isCurrentEmployeeHr(),
-  ]);
-  const canCreate = canCreateByRole || isHrEmployee;
+  const user = await getUserPermissions();
 
-  if (!canCreate) {
+  const isHr = await isCurrentEmployeeHr();
+  const isAdmin = isAdminRole(user?.role?.name);
+
+  if (!isHr && !isAdmin) {
     redirect("/404");
   }
 
   const params = await searchParams;
-  const recruitmentId =
-    typeof params?.recruitmentId === "string" ? params.recruitmentId : "";
   const applicantDocumentId =
     typeof params?.applicantDocumentId === "string"
       ? params.applicantDocumentId
-      : typeof params?.sourceApplicantDocumentId === "string"
-        ? params.sourceApplicantDocumentId
-        : "";
-  const initialApplicantDocument: EmployeeDocument | null =
-    applicantDocumentId ? await getApplicantDocumentById(applicantDocumentId) : null;
-  const traineeId =
-    typeof params?.traineeId === "string" ? params.traineeId : "";
-  const initialTrainee: Trainee | null = traineeId
-    ? await getTraineeById(traineeId)
+      : "";
+  const applicantDocument = applicantDocumentId
+    ? await getApplicantDocumentById(applicantDocumentId)
     : null;
+
+  if (applicantDocumentId && !applicantDocument) {
+    redirect("/employee-documents");
+  }
 
   return (
     <Card className="rounded-3xl border border-white/60 bg-white/80 shadow-xl backdrop-blur-md">
       <CardHeader className="border-b border-slate-100 pb-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          {/* Left */}
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-cyan-500 text-white shadow-md">
               <UserPlus size={20} />
             </div>
-
             <div>
               <CardTitle className="text-2xl font-bold text-slate-800">
-                Add Employee Profile
+                Create Trainee
               </CardTitle>
               <p className="mt-1 text-sm text-slate-500">
-                Create a new employee profile in your HRMS portal
+                Convert an approved applicant into a trainee profile
               </p>
             </div>
           </div>
 
-          {/* Right */}
           <Button
             asChild
             className="rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-5 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-lg"
           >
-            <Link href="/employee-profiles">
+            <Link href="/employee-documents">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
@@ -87,16 +68,10 @@ const EmployeeProfileCreatePage = async ({
       </CardHeader>
 
       <CardContent className="pt-6">
-        <EmployeeProfileForm
-          update={false}
-          initialRecruitmentId={recruitmentId}
-          initialApplicantDocumentId={applicantDocumentId}
-          initialApplicantDocument={initialApplicantDocument}
-          initialTrainee={initialTrainee}
-        />
+        <TraineeForm initialApplicantDocument={applicantDocument} />
       </CardContent>
     </Card>
   );
 };
 
-export default EmployeeProfileCreatePage;
+export default TraineeCreatePage;
