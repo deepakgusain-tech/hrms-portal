@@ -293,7 +293,7 @@ export default async function EmployeeProfileDetailPage({
               >
                 <Link href="/employee-documents">
                   <FileText className="size-4" />
-                  View employee documents
+                  View applicant documents
                 </Link>
               </Button>
 

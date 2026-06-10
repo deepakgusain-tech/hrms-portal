@@ -310,7 +310,7 @@ export default async function EmployeeDashboardPage({
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-slate-900">
-                    Employee Documents
+                    Applicant Documents
                   </h2>
                   <p className="text-sm text-slate-500">
                     Documents attached to this employee profile.
@@ -357,7 +357,7 @@ export default async function EmployeeDashboardPage({
                 ))
               ) : (
                 <div className="rounded-lg border border-dashed border-slate-300 p-5 text-sm text-slate-500 md:col-span-2 xl:col-span-3">
-                  No employee documents added yet.
+                  No applicant documents added yet.
                 </div>
               )}
             </div>
@@ -563,7 +563,9 @@ export default async function EmployeeDashboardPage({
     );
     const approvedApplicantDocuments = documents.filter(
       (document) =>
-        document.reviewStatus === "APPROVED" && !document.linkedEmployeeId,
+        document.reviewStatus === "APPROVED" &&
+        !document.linkedEmployeeId &&
+        !document.linkedTraineeId,
     );
     const pendingLeaveRequests = leaveRequests.filter(
       (request) => request.status === "PENDING",
@@ -712,11 +714,11 @@ export default async function EmployeeDashboardPage({
                   </div>
 
                   <Link
-                    href={`/employee-profiles/create?sourceApplicantDocumentId=${document.id}`}
+                    href={`/trainees/create?applicantDocumentId=${document.id}`}
                     className="mt-4 inline-flex h-10 items-center justify-center rounded-lg bg-cyan-600 px-4 text-sm font-medium text-white transition hover:bg-cyan-700"
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Create Employee
+                    Create Trainee
                   </Link>
                 </div>
               ))}
@@ -867,7 +869,7 @@ export default async function EmployeeDashboardPage({
                 { label: "Department", href: "/department" },
                 { label: "Job Roles", href: "/job-roles" },
                 { label: "Work Location", href: "/work-location" },
-                { label: "Employee Documents", href: "/employee-documents" },
+                { label: "Applicant Documents", href: "/employee-documents" },
                 { label: "Recruitment", href: "/recruitment-intake" },
                 { label: "Pre-Onboarding", href: "/recruitment" },
                 { label: "Attendance", href: "/attendance" },

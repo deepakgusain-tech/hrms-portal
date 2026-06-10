@@ -22,6 +22,7 @@ import {
   userSchema,
   workLocationSchema,
   attendanceSchema,
+  traineeSchema,
 } from "@/lib/validators";
 
 export type Role = z.infer<typeof roleSchema>;
@@ -54,12 +55,14 @@ export type TransferPromotion = z.infer<typeof transferPromotionSchema> & {
   toLocationName?: string;
 };
 
-export type EmployeeDocument = z.infer<typeof employeeDocumentSchema> & {
+export type ApplicantDocument = z.infer<typeof employeeDocumentSchema> & {
   applicantName?: string;
   ownerName?: string;
   ownerCode?: string;
   reviewedByName?: string;
 };
+
+export type EmployeeDocument = ApplicantDocument;
 
 export type EmployeeProfile = z.infer<typeof employeeProfileSchema> & {
   companyName?: string;
@@ -68,6 +71,14 @@ export type EmployeeProfile = z.infer<typeof employeeProfileSchema> & {
   managerName?: string;
   workLocationName?: string;
   projectNames?: string[];
+};
+
+export type Trainee = z.infer<typeof traineeSchema> & {
+  onboardingPayload?: Record<string, unknown>;
+  departmentName?: string;
+  reportingManagerName?: string;
+  employeeName?: string;
+  employeeCode?: string;
 };
 
 export type Project = z.infer<typeof projectSchema>

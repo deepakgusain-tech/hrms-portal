@@ -94,9 +94,14 @@ const onboardingMenuGroup: MenuGroup = {
       icon: <ClipboardList size={18} />,
     },
     {
-      name: "Employee Documents",
+      name: "Applicant Documents",
       url: "/employee-documents",
       icon: <IdCard size={18} />,
+    },
+    {
+      name: "Trainee Management",
+      url: "/trainees",
+      icon: <Users2Icon size={18} />,
     },
   ],
 };
@@ -113,7 +118,11 @@ const managerOnboardingMenuGroup: MenuGroup = {
   ],
 };
 
-function getRoleLabel(role?: SidebarRole, jobRole?: SidebarJobRole, isManager?: boolean) {
+function getRoleLabel(
+  role?: SidebarRole,
+  jobRole?: SidebarJobRole,
+  isManager?: boolean,
+) {
   if (role?.toLowerCase() === "employer") return "Employer Portal";
   if (role?.toLowerCase() === "employee") {
     if (isHrJobRole(jobRole)) return "HR Workspace";
@@ -287,7 +296,7 @@ function getMenuByRole(
           icon: <CalendarCheck size={18} />,
         },
         {
-          name: "Employee Documents",
+          name: "Applicant Documents",
           url: "/employee-documents",
           icon: <IdCard size={18} />,
         },
@@ -422,9 +431,12 @@ function getMenuByRole(
 function filterMenuByAccess(
   menuGroups: MenuGroup[],
   role: SidebarRole,
-  accessibleRoutes: string[]
+  accessibleRoutes: string[],
 ) {
-  if (role?.toLowerCase() === "employee" || role?.toLowerCase() === "employer") {
+  if (
+    role?.toLowerCase() === "employee" ||
+    role?.toLowerCase() === "employer"
+  ) {
     return menuGroups;
   }
 
@@ -434,7 +446,7 @@ function filterMenuByAccess(
     .map((group) => {
       if (group.children?.length) {
         const children = group.children.filter((item) =>
-          routeSet.has(item.url)
+          routeSet.has(item.url),
         );
 
         if (!children.length) return null;
@@ -476,13 +488,11 @@ export function AppSidebar({
   const filteredMenu = filterMenuByAccess(
     getMenuByRole(role, jobRole, isManager),
     role,
-    accessibleRoutes
+    accessibleRoutes,
   );
 
   const homeHref =
-    role?.toLowerCase() === "employee"
-      ? "/employee-dashboard"
-      : "/dashboard";
+    role?.toLowerCase() === "employee" ? "/employee-dashboard" : "/dashboard";
 
   const companyName = config?.name?.trim() || "SY ASSOCIATES";
   const logoSrc = config?.logo?.trim() || "";
@@ -510,14 +520,14 @@ export function AppSidebar({
               asChild
               className={cn(
                 "h-auto rounded-[1.5rem] p-2.5 transition-all duration-200 hover:bg-slate-50/95",
-                isCollapsed && "justify-center p-2"
+                isCollapsed && "justify-center p-2",
               )}
             >
               <Link href={homeHref}>
                 <div
                   className={cn(
                     "flex min-w-0 items-center gap-3",
-                    isCollapsed && "w-full justify-center gap-0"
+                    isCollapsed && "w-full justify-center gap-0",
                   )}
                 >
                   {showLogo && logoSrc ? (
@@ -538,7 +548,7 @@ export function AppSidebar({
                   <div
                     className={cn(
                       "min-w-0 group-data-[collapsible=icon]:hidden",
-                      isCollapsed && "hidden"
+                      isCollapsed && "hidden",
                     )}
                   >
                     <span className="block truncate text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700/90">
@@ -553,8 +563,6 @@ export function AppSidebar({
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-
-       
       </SidebarHeader>
 
       <SidebarContent className="relative z-10 space-y-3 p-2">
@@ -579,31 +587,33 @@ export function AppSidebar({
                         className={cn(
                           `
                         rounded-[1.35rem] cursor-pointer transition-all duration-200
-                        ${pathname === group.url
+                        ${
+                          pathname === group.url
                             ? "bg-gradient-to-r from-slate-900 via-cyan-700 to-sky-600 text-white shadow-[0_18px_34px_-20px_rgba(8,145,178,0.6)]"
                             : "text-slate-700 hover:bg-slate-50/95 hover:text-slate-950"
-                          }
+                        }
                       `,
-                          isCollapsed && "justify-center px-0"
+                          isCollapsed && "justify-center px-0",
                         )}
                       >
                         <Link
                           href={group.url!}
                           className={cn(
                             "flex w-full items-center gap-3",
-                            isCollapsed && "justify-center gap-0"
+                            isCollapsed && "justify-center gap-0",
                           )}
                         >
                           <div
                             className={cn(
                               `
                               flex aspect-square size-9 items-center justify-center rounded-2xl
-                              ${pathname === group.url
-                                ? "bg-white/14 text-white ring-1 ring-white/18"
-                                : "border border-slate-200/80 bg-white text-cyan-700 shadow-sm"
+                              ${
+                                pathname === group.url
+                                  ? "bg-white/14 text-white ring-1 ring-white/18"
+                                  : "border border-slate-200/80 bg-white text-cyan-700 shadow-sm"
                               }
                             `,
-                              isCollapsed && "size-10"
+                              isCollapsed && "size-10",
                             )}
                           >
                             {group.icon}
@@ -611,17 +621,22 @@ export function AppSidebar({
                           <div
                             className={cn(
                               "flex min-w-0 flex-1 items-center justify-between gap-2",
-                              isCollapsed && "hidden"
+                              isCollapsed && "hidden",
                             )}
                           >
                             <span className="truncate">{group.name}</span>
-                            {pathname === group.url ? <span className="h-2 w-2 rounded-full bg-white/85" /> : null}
+                            {pathname === group.url ? (
+                              <span className="h-2 w-2 rounded-full bg-white/85" />
+                            ) : null}
                           </div>
                         </Link>
                       </SidebarMenuButton>
                     </TooltipTrigger>
                     {isCollapsed && (
-                      <TooltipContent side="right" className="border-0 bg-slate-900 text-white shadow-xl">
+                      <TooltipContent
+                        side="right"
+                        className="border-0 bg-slate-900 text-white shadow-xl"
+                      >
                         {group.name}
                       </TooltipContent>
                     )}
@@ -629,7 +644,7 @@ export function AppSidebar({
                 </TooltipProvider>
               </SidebarMenuItem>
             </SidebarMenu>
-          )
+          ),
         )}
       </SidebarContent>
 

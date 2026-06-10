@@ -31,7 +31,7 @@ const EmployeeDocumentPage = async () => {
       canEdit={permissions.canEdit}
       canDelete={permissions.canDelete}
       canReview={true}
-      title="Employee Documents"
+      title="Applicant Documents"
       actions={
         permissions.canCreate && (
           <Button className="bg-blue-500 hover:bg-blue-600">

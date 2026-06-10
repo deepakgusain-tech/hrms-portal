@@ -374,7 +374,7 @@ export default async function DashboardPage() {
       take: 6,
       include: { employee: { select: { employeeName: true, employeeCode: true, department: { select: { name: true } } } } },
     }),
-    prisma.employeeDocument.findMany({
+    prisma.applicantDocument.findMany({
       orderBy: { createdAt: "desc" },
       take: 6,
       include: { employee: { select: { employeeName: true, employeeCode: true } } },
@@ -445,7 +445,7 @@ export default async function DashboardPage() {
     {
       label: "Document Reviews",
       value: pendingDocs.length,
-      detail: `${pendingDocs.length} pending uploads in employee documents`,
+      detail: `${pendingDocs.length} pending uploads in applicant documents`,
       href: "/employee-documents",
       icon: IdCard,
     },

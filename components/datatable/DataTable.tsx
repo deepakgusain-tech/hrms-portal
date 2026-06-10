@@ -138,8 +138,11 @@ export function DataTable<TData, TValue>({
     target instanceof HTMLElement &&
     Boolean(target.closest("a, button, input, select, textarea, [role='button']"))
 
+  const getColumnSizeStyle = (size?: number) =>
+    size ? { width: `${size}px` } : undefined
+
   return (
-    <Card className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <Card className="w-full min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
       {/* Header */}
       <CardHeader className="border-b border-slate-100 pb-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -335,8 +338,8 @@ export function DataTable<TData, TValue>({
 
         {/* Table */}
         <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="max-w-full overflow-x-auto">
-            <Table className={cn("table-fixed w-full", tableClassName)}>
+          <div className="w-full max-w-full overflow-x-auto">
+            <Table className={cn("table-auto min-w-max", tableClassName)}>
               <TableHeader className="bg-gradient-to-r from-cyan-600 to-sky-500">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow
@@ -347,8 +350,9 @@ export function DataTable<TData, TValue>({
                       <TableHead
                         key={header.id}
                         onClick={header.column.getToggleSortingHandler()}
+                        style={getColumnSizeStyle(header.column.getSize())}
                         className={cn(
-                          "cursor-pointer whitespace-nowrap px-4 py-4 text-sm font-semibold text-white",
+                          "cursor-pointer whitespace-nowrap px-4 py-4 text-sm font-semibold text-white align-top",
                           headCellClassName
                         )}
                       >
@@ -414,8 +418,9 @@ export function DataTable<TData, TValue>({
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
+                          style={getColumnSizeStyle(cell.column.getSize())}
                           className={cn(
-                            "whitespace-nowrap px-4 py-4 text-sm text-slate-700",
+                            "whitespace-nowrap px-4 py-4 text-sm text-slate-700 align-top",
                             bodyCellClassName
                           )}
                         >

@@ -5,6 +5,7 @@ import { EmployeeProfile } from "@/types";
 import bcrypt from "bcrypt";
 import { revalidatePath } from "next/cache";
 import { attachApplicantDocumentToEmployeeProfile } from "./employee-documents";
+import { attachTraineeToEmployeeProfile } from "./trainees";
 import { prisma } from "../prisma";
 import { formatError } from "../utils";
 import { employeeProfileSchema } from "../validators";
@@ -429,6 +430,16 @@ export async function createEmployeeProfile(
       if (record.sourceApplicantDocumentId) {
         await attachApplicantDocumentToEmployeeProfile({
           applicantDocumentId: record.sourceApplicantDocumentId,
+          employeeId: employee.id,
+          employeeCode: employee.employeeCode,
+          employeeName: employee.employeeName,
+          tx,
+        });
+      }
+
+      if (record.sourceTraineeId) {
+        await attachTraineeToEmployeeProfile({
+          traineeId: record.sourceTraineeId,
           employeeId: employee.id,
           employeeCode: employee.employeeCode,
           employeeName: employee.employeeName,

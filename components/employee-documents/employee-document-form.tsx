@@ -6,6 +6,13 @@ import {
   updateEmployeeDocument,
 } from "@/lib/actions/employee-documents";
 import { employeeDocumentDefaultValues } from "@/lib/constants";
+import {
+  DOCUMENT_UPLOAD_ACCEPT,
+  IMAGE_UPLOAD_ACCEPT,
+  MAX_DOCUMENT_UPLOAD_SIZE_BYTES,
+  isAllowedUploadFile,
+  isImagePreviewUrl,
+} from "@/lib/document-uploads";
 import { employeeDocumentSchema } from "@/lib/validators";
 import { EmployeeDocument } from "@/types";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,7 +28,6 @@ import {
   User,
   IdCard,
 } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect } from "react";
 import {
@@ -83,9 +89,6 @@ const fieldClass =
 const textAreaClass =
   "min-h-28 w-full rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-200 hover:border-cyan-300 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100 outline-none";
 
-const cardClass =
-  "rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-sm space-y-5";
-
 const requiredLabel = (label: string): React.ReactNode => (
   <span>
     {label}
@@ -95,15 +98,94 @@ const requiredLabel = (label: string): React.ReactNode => (
 
 type InputType = z.input<typeof employeeDocumentSchema>;
 type OutputType = z.output<typeof employeeDocumentSchema>;
-type ImageFieldPath = FieldPath<InputType>;
 
-const readFileAsDataUrl = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject();
-    reader.readAsDataURL(file);
+type UploadState = {
+  uploading: boolean;
+  progress: number;
+  error: string;
+  fileName: string;
+  mimeType: string;
+};
+
+type UploadResponse = {
+  success: boolean;
+  url?: string;
+  mimeType?: string;
+  originalName?: string;
+  message?: string;
+};
+
+type UploadedFileResponse = {
+  success: true;
+  url: string;
+  mimeType?: string;
+  originalName?: string;
+};
+
+const defaultUploadState: UploadState = {
+  uploading: false,
+  progress: 0,
+  error: "",
+  fileName: "",
+  mimeType: "",
+};
+
+function getUploadErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unable to upload file";
+}
+
+function uploadFileToStorage(
+  file: File,
+  onProgress: (progress: number) => void,
+): Promise<UploadedFileResponse> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/uploads");
+    xhr.responseType = "text";
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || event.total <= 0) {
+        return;
+      }
+
+      onProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+    };
+
+    xhr.onload = () => {
+      const responseText = xhr.responseText || "{}";
+
+      let payload: UploadResponse;
+      try {
+        payload = JSON.parse(responseText) as UploadResponse;
+      } catch {
+        reject(new Error("Upload service returned an invalid response"));
+        return;
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300 || !payload.success || !payload.url) {
+        reject(
+          new Error(payload.message || "Unable to upload file"),
+        );
+        return;
+      }
+
+      const url = payload.url;
+      resolve({
+        success: true,
+        url,
+        mimeType: payload.mimeType,
+        originalName: payload.originalName,
+      });
+    };
+
+    xhr.onerror = () => reject(new Error("Network error while uploading file"));
+    xhr.onabort = () => reject(new Error("Upload cancelled"));
+
+    const formData = new FormData();
+    formData.append("file", file);
+    xhr.send(formData);
   });
+}
 
 const EmployeeDocumentForm = ({
   data,
@@ -117,6 +199,9 @@ const EmployeeDocumentForm = ({
   const id = data?.id;
 
   const [isPending, startTransition] = React.useTransition();
+  const [uploadStates, setUploadStates] = React.useState<
+    Record<string, UploadState>
+  >({});
 
   const form = useForm<InputType, unknown, OutputType>({
     resolver: zodResolver(employeeDocumentSchema),
@@ -136,6 +221,102 @@ const EmployeeDocumentForm = ({
   const selectedInterviewCandidate = selectedCandidates.find(
     (item) => item.sourceInterviewApplicantId === selectedInterviewApplicantId,
   );
+
+  const setUploadState = (
+    fieldName: string,
+    patch: Partial<UploadState>,
+  ) => {
+    setUploadStates((current) => ({
+      ...current,
+      [fieldName]: {
+        ...defaultUploadState,
+        ...(current[fieldName] ?? {}),
+        ...patch,
+      },
+    }));
+  };
+
+  const clearUploadState = (fieldName: string) => {
+    setUploadStates((current) => {
+      const next = { ...current };
+      delete next[fieldName];
+      return next;
+    });
+  };
+
+  const uploadDocumentFile = async (
+    fieldName: FieldPath<InputType>,
+    statusName: FieldPath<InputType>,
+    labelText: string,
+    onUrlChange: (url: string) => void,
+    file: File,
+    accept: string,
+  ) => {
+    form.clearErrors(fieldName);
+
+    if (file.size > MAX_DOCUMENT_UPLOAD_SIZE_BYTES) {
+      const message = `File size must be ${Math.floor(
+        MAX_DOCUMENT_UPLOAD_SIZE_BYTES / (1024 * 1024),
+      )}MB or smaller.`;
+      form.setError(fieldName, { type: "manual", message });
+      toast.error(message);
+      return;
+    }
+
+    if (!isAllowedUploadFile(file, accept)) {
+      const message = accept.includes("application/pdf")
+        ? "Unsupported file type. Please upload an image or PDF."
+        : "Unsupported file type. Please upload an image.";
+      form.setError(fieldName, { type: "manual", message });
+      toast.error(message);
+      return;
+    }
+
+    setUploadState(fieldName, {
+      uploading: true,
+      progress: 0,
+      error: "",
+      fileName: file.name,
+      mimeType: file.type,
+    });
+
+    try {
+      const uploaded = await uploadFileToStorage(file, (progress) => {
+        setUploadState(fieldName, {
+          uploading: true,
+          progress,
+          error: "",
+          fileName: file.name,
+          mimeType: file.type,
+        });
+      });
+
+      onUrlChange(uploaded.url);
+      form.setValue(statusName, "PENDING_REVIEW" as never, {
+        shouldDirty: true,
+      });
+      form.clearErrors(fieldName);
+      setUploadState(fieldName, {
+        uploading: false,
+        progress: 100,
+        error: "",
+        fileName: uploaded.originalName || file.name,
+        mimeType: uploaded.mimeType || file.type,
+      });
+      toast.success(`${labelText} uploaded successfully`);
+    } catch (error) {
+      const message = getUploadErrorMessage(error);
+      setUploadState(fieldName, {
+        uploading: false,
+        progress: 0,
+        error: message,
+        fileName: file.name,
+        mimeType: file.type,
+      });
+      form.setError(fieldName, { type: "manual", message });
+      toast.error(message);
+    }
+  };
 
   useEffect(() => {
     if (data) form.reset(data);
@@ -196,103 +377,86 @@ const EmployeeDocumentForm = ({
     form.setValue("documentContext", "ONBOARDING");
   }, [form, mode]);
 
-  const onSubmit: SubmitHandler<OutputType> = async (values) => {
-    startTransition(async () => {
-      const res =
-        update && id
-          ? await updateEmployeeDocument(values, id)
-          : await createEmployeeDocument(values);
+  const saveApplicantDocument = async (values: OutputType) => {
+    console.log("FORM VALUES");
+    console.log(values);
 
-      if (!res.success) {
-        toast.error(res.message);
-        return;
-      }
+    const endpoint = update && id
+      ? `/api/applicant-documents/${id}`
+      : "/api/applicant-documents";
 
-      toast.success(res.message);
-      router.push(redirectTo);
-      router.refresh();
+    console.log("ENDPOINT:", endpoint);
+    console.log("METHOD:", update && id ? "PUT" : "POST");  
+
+    const response = await fetch(endpoint, {
+      method: update && id ? "PUT" : "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
     });
+
+    console.log("STATUS:", response.status);
+
+    const result = await response.json();
+
+    console.log("API RESPONSE:");
+    console.log(result);
+
+    if (!result.success) {
+      throw new Error(result.message || "Unable to save applicant document");
+    }
+
+    return result as { success: true; message: string };
   };
 
-  const renderUpload = (name: ImageFieldPath, label: string) => (
-    <FormField
-      control={form.control}
-      name={name}
-      render={({ field }) => {
-        const fileUrl = typeof field.value === "string" ? field.value : "";
-
-        return (
-          <FormItem>
-            <FormLabel>{label}</FormLabel>
-
-            <FormControl>
-              <div className="space-y-3">
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50 px-4 py-4 text-sm font-medium text-cyan-700 transition hover:bg-cyan-100">
-                  <Upload className="h-4 w-4" />
-                  Upload File
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-
-                      try {
-                        const base64 = await readFileAsDataUrl(file);
-                        field.onChange(base64);
-                      } catch {
-                        toast.error("Unable to read file");
-                      }
-                    }}
-                  />
-                </label>
-
-                {fileUrl && (
-                  <div className="space-y-2">
-                    <Image
-                      src={fileUrl}
-                      alt={label}
-                      width={220}
-                      height={140}
-                      unoptimized
-                      className="h-36 w-full rounded-2xl border object-cover md:w-56"
-                    />
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="rounded-xl"
-                      onClick={() => field.onChange("")}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Remove
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </FormControl>
-
-            <FormMessage />
-          </FormItem>
-        );
-      }}
-    />
+  const hasUploadingFiles = Object.values(uploadStates).some(
+    (state) => state.uploading,
   );
+
+  const onSubmit: SubmitHandler<OutputType> = async (values) => {
+    startTransition(async () => {
+      try {
+        const res =
+          mode === "employee"
+            ? update && id
+              ? await updateEmployeeDocument(values, id)
+              : await createEmployeeDocument(values)
+            : await saveApplicantDocument(values);
+
+        if (!res.success) {
+          toast.error(res.message);
+          return;
+        }
+
+        toast.success(res.message);
+        router.push(redirectTo);
+        router.refresh();
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Unable to save document",
+        );
+      }
+    });
+  };
 
   const renderDocumentUpload = (
     name: FieldPath<InputType>,
     statusName: FieldPath<InputType>,
     label: React.ReactNode,
-    accept = "image/*,application/pdf",
+    accept = DOCUMENT_UPLOAD_ACCEPT,
   ) => (
     <FormField
       control={form.control}
       name={name}
       render={({ field }) => {
         const fileUrl = typeof field.value === "string" ? field.value : "";
-        const isImage = fileUrl.startsWith("data:image/");
+        const uploadState = uploadStates[name] ?? defaultUploadState;
+        const isImage =
+          uploadState.mimeType.startsWith("image/") ||
+          isImagePreviewUrl(fileUrl);
         const altText = typeof label === "string" ? label : "Uploaded document";
+        const labelText = typeof label === "string" ? label : altText;
 
         return (
           <FormItem>
@@ -301,37 +465,56 @@ const EmployeeDocumentForm = ({
               <div className="space-y-3">
                 <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50 px-4 py-4 text-sm font-medium text-cyan-700 transition hover:bg-cyan-100">
                   <Upload className="h-4 w-4" />
-                  Upload File
+                  {uploadState.uploading
+                    ? `Uploading ${uploadState.progress}%`
+                    : "Upload File"}
                   <input
                     type="file"
                     accept={accept}
                     className="hidden"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
+                      e.target.value = "";
                       if (!file) return;
 
-                      try {
-                        const base64 = await readFileAsDataUrl(file);
-                        field.onChange(base64);
-                        form.setValue(statusName, "PENDING_REVIEW" as never, {
-                          shouldDirty: true,
-                        });
-                      } catch {
-                        toast.error("Unable to read file");
-                      }
+                      await uploadDocumentFile(
+                        name,
+                        statusName,
+                        labelText,
+                        field.onChange,
+                        file,
+                        accept,
+                      );
                     }}
                   />
                 </label>
 
+                {uploadState.uploading ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>{uploadState.fileName || "Uploading file"}</span>
+                      <span>{uploadState.progress}%</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-cyan-500 transition-all"
+                        style={{ width: `${uploadState.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {uploadState.error ? (
+                  <p className="text-sm text-rose-600">{uploadState.error}</p>
+                ) : null}
+
                 {fileUrl ? (
                   <div className="space-y-2">
                     {isImage ? (
-                      <Image
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
                         src={fileUrl}
                         alt={altText}
-                        width={220}
-                        height={140}
-                        unoptimized
                         className="h-36 w-full rounded-2xl border object-cover md:w-56"
                       />
                     ) : (
@@ -350,7 +533,11 @@ const EmployeeDocumentForm = ({
                       type="button"
                       variant="outline"
                       className="rounded-xl"
-                      onClick={() => field.onChange("")}
+                      onClick={() => {
+                        field.onChange("");
+                        clearUploadState(String(name));
+                        form.clearErrors(name);
+                      }}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Remove
@@ -544,6 +731,7 @@ const EmployeeDocumentForm = ({
                       "passportPhotoFileUrl",
                       "passportPhotoStatus",
                       requiredLabel("Passport Size Photograph"),
+                      IMAGE_UPLOAD_ACCEPT,
                     )}
                   </div>
                 </div>
@@ -1170,16 +1358,18 @@ const EmployeeDocumentForm = ({
         {/* Submit */}
         <Button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || hasUploadingFiles}
           className="h-12 rounded-2xl bg-gradient-to-r from-indigo-600 to-cyan-500 px-8 text-white shadow-md transition-all hover:scale-[1.02] hover:shadow-xl"
         >
-          {isPending ? (
+          {isPending || hasUploadingFiles ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
             <ArrowRight className="mr-2 h-4 w-4" />
           )}
 
-          {update
+          {hasUploadingFiles
+            ? "Upload in progress..."
+            : update
             ? mode === "employee"
               ? "Update My Document"
               : "Update Applicant Document"

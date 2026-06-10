@@ -8,9 +8,27 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { auth, signIn, signOut } from "@/auth";
 import bcrypt from "bcrypt";
 
+type RecruitmentApplicantLoginRecord = {
+  email?: string | null;
+  applicantPortalId?: string | null;
+  applicantUsername?: string | null;
+  applicantPasswordHash?: string | null;
+  applicantPortalEnabled?: boolean | null;
+  status?: string | null;
+};
+
+type RecruitmentLookupClient = {
+  recruitmentApplication: {
+    findMany: (args: {
+      select: Record<string, boolean>;
+    }) => Promise<RecruitmentApplicantLoginRecord[]>;
+  };
+};
+
 async function findApplicantForLogin(identifier: string) {
   try {
-    const records = await prisma.recruitmentApplication.findMany({
+    const recruitmentClient = prisma as unknown as RecruitmentLookupClient;
+    const records = await recruitmentClient.recruitmentApplication.findMany({
       select: {
         email: true,
         applicantPortalId: true,
@@ -33,6 +51,42 @@ async function findApplicantForLogin(identifier: string) {
             record.applicantPortalId,
             record.email,
           ]
+            .filter(Boolean)
+            .some((value) => value?.toLowerCase() === normalizedIdentifier)
+        );
+      }) ?? null
+    );
+  } catch {
+    return null;
+  }
+}
+
+async function findTraineeForLogin(identifier: string) {
+  try {
+    const records = (await prisma.trainee.findMany({
+      select: {
+        traineeCode: true,
+        fullName: true,
+        email: true,
+        loginPassword: true,
+        status: true,
+      },
+    })) as Array<{
+      traineeCode?: string | null;
+      fullName?: string | null;
+      email?: string | null;
+      loginPassword?: string | null;
+      status?: string | null;
+    }>;
+
+    const normalizedIdentifier = identifier.toLowerCase();
+
+    return (
+      records.find((record) => {
+        return (
+          record.status === "ACTIVE" &&
+          !!record.loginPassword &&
+          [record.traineeCode, record.email]
             .filter(Boolean)
             .some((value) => value?.toLowerCase() === normalizedIdentifier)
         );
@@ -253,21 +307,36 @@ export async function loginFormUser(prevState: unknown, formData: FormData) {
         existingApplicant.applicantPasswordHash,
       ));
 
+    const existingTrainee =
+      !userMatched && !employeeMatched && !employerMatched && !applicantMatched
+        ? await findTraineeForLogin(normalizedUser.username)
+        : null;
+
+    const traineeMatched =
+      !!existingTrainee?.loginPassword &&
+      (await bcrypt.compare(
+        normalizedUser.password,
+        existingTrainee.loginPassword,
+      ));
+
     await signIn("credentials", { ...normalizedUser, redirect: false });
-    
+
+    const redirectTo = userMatched && existingUser?.role?.name?.toLowerCase() === "employee"
+      ? "/employee-dashboard"
+      : employeeMatched
+        ? "/employee-dashboard"
+        : employerMatched
+          ? "/dashboard"
+          : applicantMatched
+            ? "/applicant-dashboard/documents"
+            : traineeMatched
+              ? "/trainee-dashboard"
+              : "/dashboard";
+
     return {
       success: true,
       message: "Login successfully",
-      redirectTo:
-        userMatched && existingUser?.role?.name?.toLowerCase() === "employee"
-          ? "/employee-dashboard"
-          : employeeMatched
-            ? "/employee-dashboard"
-            : employerMatched
-              ? "/dashboard"
-              : applicantMatched
-                ? "/applicant-dashboard/documents"
-          : "/dashboard",
+      redirectTo,
     };
   } catch (error) {
     if (isRedirectError(error)) {

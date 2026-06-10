@@ -100,6 +100,15 @@ const LoginForm = () => {
             <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
                 Sign In
             </button>
+
+            <div className="text-center text-sm text-gray-500">
+                <Link
+                    href="/trainee-login"
+                    className="text-cyan-600 underline-offset-2 hover:underline"
+                >
+                    Trainee login
+                </Link>
+            </div>
         </form>
     )
 }
