@@ -22,6 +22,7 @@ import {
   userSchema,
   workLocationSchema,
   attendanceSchema,
+  attendanceRequestSchema,
 } from "@/lib/validators";
 
 export type Role = z.infer<typeof roleSchema>;
@@ -80,6 +81,13 @@ export type Attendance = z.infer<typeof attendanceSchema> & {
   employeeName?: string;
   employeeCode?: string;
   departmentName?: string;
+};
+export type AttendanceRequest = z.infer<typeof attendanceRequestSchema> & {
+  employeeName?: string;
+  employeeCode?: string;
+  departmentName?: string;
+  approverName?: string;
+  attendanceDate?: string;
 };
 export type EodReport = z.infer<typeof eodReportSchema> & {
   employeeName?: string;

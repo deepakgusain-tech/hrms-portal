@@ -18,6 +18,7 @@ import {
   getEmployeeTypeLabel,
   getEmployeeTypeTone,
   getEmploymentTrackingState,
+  type EmployeeEmploymentRecord,
 } from "@/lib/employee-employment";
 import { prisma } from "@/lib/prisma";
 import {
@@ -39,6 +40,34 @@ import { redirect } from "next/navigation";
 
 const formatDate = (value?: Date | null) =>
   value ? new Date(value).toLocaleDateString("en-GB") : "-";
+
+function toEmployeeEmploymentRecord(
+  profile: {
+    id?: string;
+    employeeName?: string | null;
+    employeeCode?: string | null;
+    employeeType?: string | null;
+    probationStartDate?: string | Date | null;
+    probationEndDate?: string | Date | null;
+    trainingStartDate?: string | Date | null;
+    trainingEndDate?: string | Date | null;
+    managerId?: string | null;
+    manager?: { employeeName?: string | null } | null;
+  },
+): EmployeeEmploymentRecord {
+  return {
+    id: profile.id,
+    employeeName: profile.employeeName ?? "",
+    employeeCode: profile.employeeCode ?? profile.id ?? "",
+    employeeType: profile.employeeType,
+    probationStartDate: profile.probationStartDate,
+    probationEndDate: profile.probationEndDate,
+    trainingStartDate: profile.trainingStartDate,
+    trainingEndDate: profile.trainingEndDate,
+    managerId: profile.managerId,
+    managerName: profile.manager?.employeeName ?? null,
+  };
+}
 
 export default async function EmployeeDashboardPage({
   searchParams,
@@ -578,10 +607,15 @@ export default async function EmployeeDashboardPage({
       (request) => request.status === "PENDING",
     );
     const trackedEmployees = employeeProfiles
-      .map((profile) => ({
-        profile,
-        tracking: getEmploymentTrackingState(profile),
-      }))
+      .map((profile) => {
+        const employmentRecord = toEmployeeEmploymentRecord(profile);
+
+        return {
+          profile,
+          employmentRecord,
+          tracking: getEmploymentTrackingState(employmentRecord),
+        };
+      })
       .filter(({ tracking }) => tracking.isTracked && tracking.isActive);
     const probationTrackedEmployees = trackedEmployees.filter(
       ({ tracking }) => tracking.kind === "PROBATION",
@@ -590,7 +624,7 @@ export default async function EmployeeDashboardPage({
       ({ tracking }) => tracking.kind === "TRAINING",
     );
     const hrEmploymentNotifications = buildEmploymentReminderMessages(
-      trackedEmployees.map(({ profile }) => profile),
+      trackedEmployees.map(({ employmentRecord }) => employmentRecord),
       "HR",
     );
 

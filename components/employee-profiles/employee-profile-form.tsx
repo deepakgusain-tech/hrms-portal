@@ -216,7 +216,7 @@ const EmployeeProfileForm = ({
   const [isPending, startTransition] = React.useTransition();
 
   const form = useForm<z.infer<typeof employeeProfileSchema>>({
-    resolver: zodResolver(employeeProfileSchema),
+    resolver: zodResolver(employeeProfileSchema) as any,
     defaultValues: data ?? employeeProfileDefaultValues,
   });
   const selectedApplicantDocumentId = useWatch({
@@ -351,7 +351,7 @@ const EmployeeProfileForm = ({
     update,
   ]);
 
-  const onSubmit: SubmitHandler<z.infer<typeof employeeProfileSchema>> = async (
+  const onSubmit: SubmitHandler<z.infer<typeof employeeProfileSchema>>  = async (
     values,
   ) => {
     startTransition(async () => {

@@ -92,6 +92,7 @@ model User {
 
   reviewedLeaveRequests     LeaveRequest[]
   reviewedEmployeeDocuments ApplicantDocument[]
+  reviewedAttendanceRequests AttendanceRequest[] @relation("AttendanceRequestApprovedBy")
 
   @@index([resetTokenHash])
 }
@@ -449,6 +450,7 @@ model EmployeeProfile {
   taskComments             TaskComment[]
   taskSubmissions          TaskSubmission[]
   attendances              Attendance[]
+  attendanceRequests       AttendanceRequest[] @relation("AttendanceRequestEmployee")
   leaveRequests            LeaveRequest[]
   eodReports               EodReport[]
   reviewedEodReports       EodReport[]         @relation("EodReviewedByManager")
@@ -629,10 +631,36 @@ model Attendance {
 
   employee   EmployeeProfile @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   eodReports EodReport[]
+  attendanceRequests AttendanceRequest[]
 
   @@unique([employeeId, date])
   @@index([date])
   @@index([employeeId])
+}
+
+model AttendanceRequest {
+  id            String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  employeeId    String                 @db.Uuid
+  attendanceId  String?                @db.Uuid
+  requestType   AttendanceRequestType
+  reason        String
+  notes         String?
+  status        AttendanceRequestStatus @default(PENDING)
+  approvedById  String?                @db.Uuid
+  approvedAt    DateTime?
+  rejectionReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee   EmployeeProfile @relation("AttendanceRequestEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  attendance Attendance?     @relation(fields: [attendanceId], references: [id], onDelete: SetNull)
+  approvedBy User?           @relation("AttendanceRequestApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+  @@index([attendanceId])
+  @@index([status])
+  @@index([requestType])
 }
 
 model EodReport {
@@ -686,7 +714,23 @@ enum AttendanceStatus {
   ABSENT
   LEAVE
   HALF_DAY
+  WFH
+  OD
+  OUT_OF_STATION
   HOLIDAY
+}
+
+enum AttendanceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceRequestType {
+  HALF_DAY
+  WFH
+  OD
+  OUT_OF_STATION
 }
 
 enum LeaveType {

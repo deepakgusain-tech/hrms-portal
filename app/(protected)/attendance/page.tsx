@@ -12,7 +12,7 @@ import {
   getAttendanceDashboard,
   getAttendanceOptions,
 } from "@/lib/actions/attendance";
-import { isCurrentEmployeeHr } from "@/lib/employee-job-role";
+import { isCurrentEmployeeHr, isCurrentEmployeeManager } from "@/lib/employee-job-role";
 import {
   canManageAllAttendance,
   getRoutePermissions,
@@ -20,17 +20,23 @@ import {
 } from "@/lib/rbac";
 
 export default async function AttendancePage() {
-  const [permissions, user] = await Promise.all([
+  const [permissions, requestPermissions, user] = await Promise.all([
     getRoutePermissions("/attendance"),
+    getRoutePermissions("/attendance/requests"),
     getUserPermissions(),
   ]);
   const isHrEmployee = await isCurrentEmployeeHr();
+  const isManagerEmployee = await isCurrentEmployeeManager();
 
   if (!permissions.canView && !isHrEmployee) {
     redirect("/404");
   }
 
-  if (!canManageAllAttendance(user?.role?.name) && !isHrEmployee) {
+  if (
+    !canManageAllAttendance(user?.role?.name) &&
+    !isHrEmployee &&
+    !isManagerEmployee
+  ) {
     redirect("/attendance/my");
   }
 
@@ -69,6 +75,14 @@ export default async function AttendancePage() {
       icon: CalendarDays,
       primary: false,
     },
+    requestPermissions.canView && (isHrEmployee || isManagerEmployee || canManageAllAttendance(user?.role?.name))
+      ? {
+          href: "/attendance/requests",
+          label: "Attendance Requests",
+          icon: CalendarDays,
+          primary: false,
+        }
+      : null,
   ].filter(Boolean) as {
     href: string;
     label: string;
@@ -112,7 +126,7 @@ export default async function AttendancePage() {
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 sm:grid-cols-2">
+          <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700 sm:grid-cols-2 xl:grid-cols-4">
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
                 Present
@@ -139,10 +153,46 @@ export default async function AttendancePage() {
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
+                Half Days
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">
+                {dashboard.summary.halfDays}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
+                WFH
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">
+                {dashboard.summary.wfh}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
+                OD
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">
+                {dashboard.summary.od}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
+                Out Of Station
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">
+                {dashboard.summary.outOfStation}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
                 Exceptions
               </p>
               <p className="mt-2 text-lg font-semibold text-slate-900">
-                {dashboard.summary.absents + dashboard.summary.halfDays}
+                {dashboard.summary.absents +
+                  dashboard.summary.halfDays +
+                  dashboard.summary.wfh +
+                  dashboard.summary.od +
+                  dashboard.summary.outOfStation}
               </p>
             </div>
           </div>

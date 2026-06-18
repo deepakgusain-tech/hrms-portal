@@ -181,10 +181,10 @@ const menu: MenuGroup[] = [
         url: "/attendance",
         icon: <CalendarCheck size={18} />,
       },
-      {
-        name: "Leave Requests",
-        url: "/leave-requests",
-        icon: <CalendarPlus size={18} />,
+        {
+          name: "Leave Requests",
+          url: "/leave-requests",
+          icon: <CalendarPlus size={18} />,
       },
       {
         name: "EOD Reporting",

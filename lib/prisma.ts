@@ -83,14 +83,25 @@ function hasRecruitmentStorageModels(client: PrismaClient) {
   )
 }
 
-export const prisma = (() => {
+function hasAttendanceRequestModel(client: PrismaClient) {
+  const models = (client as PrismaClient & {
+    _runtimeDataModel?: {
+      models?: Record<string, unknown>
+    }
+  })._runtimeDataModel?.models
+
+  return Boolean(models?.AttendanceRequest)
+}
+
+export function getPrismaClient() {
   const cached = globalForPrisma.prisma
 
   if (
     cached &&
     hasApplicantDocumentReviewFields(cached) &&
     hasEodReportingFields(cached) &&
-    hasRecruitmentStorageModels(cached)
+    hasRecruitmentStorageModels(cached) &&
+    hasAttendanceRequestModel(cached)
   ) {
     return cached
   }
@@ -98,7 +109,9 @@ export const prisma = (() => {
   const client = createPrismaClient()
   globalForPrisma.prisma = client
   return client
-})()
+}
+
+export const prisma = getPrismaClient()
 
 if (process.env.NODE_ENV !== "production")
   globalForPrisma.prisma = prisma
