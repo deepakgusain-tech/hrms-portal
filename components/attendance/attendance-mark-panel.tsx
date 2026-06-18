@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import type { AttendanceRecord } from "@/lib/actions/attendance";
+import { AttendanceRequestModal } from "@/components/attendance/attendance-request-modal";
 
 type Participant = {
   id: string;
@@ -192,14 +193,32 @@ export function AttendanceMarkPanel({
           </p>
         )}
 
-        <Button
-          onClick={mark}
-          disabled={!canMarkAttendance || isPending || hasCheckedOut}
-          className="h-11 bg-cyan-600 px-4 hover:bg-cyan-700"
-        >
-          {hasCheckedIn ? <LogOut /> : <LogIn />}
-          {hasCheckedIn ? "Check Out" : "Check In"}
-        </Button>
+        {!hasCheckedIn || hasCheckedOut ? (
+          <Button
+            onClick={mark}
+            disabled={!canMarkAttendance || isPending || hasCheckedOut}
+            className="h-11 bg-cyan-600 px-4 hover:bg-cyan-700"
+          >
+            <LogIn />
+            Check In
+          </Button>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={mark}
+              disabled={!canMarkAttendance || isPending || hasCheckedOut}
+              className="h-11 bg-cyan-600 px-4 hover:bg-cyan-700"
+            >
+              <LogOut />
+              Check Out
+            </Button>
+            <AttendanceRequestModal
+              employeeId={selectedParticipant?.id ?? ""}
+              attendanceId={record?.id}
+              disabled={!canMarkAttendance}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

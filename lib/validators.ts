@@ -20,6 +20,17 @@ const recruitmentTriStatuses = [
   "NO",
   "NOT_APPLICABLE",
 ] as const;
+const attendanceRequestStatuses = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+] as const;
+const attendanceRequestTypes = [
+  "HALF_DAY",
+  "WFH",
+  "OD",
+  "OUT_OF_STATION",
+] as const;
 const recruitmentPipelineStatuses = [
   "PENDING",
   "REJECTED",
@@ -819,6 +830,22 @@ export const attendanceSchema = z.object({
   isLate: z.boolean().optional(),
   isHalfDay: z.boolean().optional(),
   remarks: z.string().optional(),
+  createdAt: z.string().nullable().optional(),
+  updatedAt: z.string().nullable().optional(),
+});
+
+/* ---------------- ATTENDANCE REQUEST ---------------- */
+export const attendanceRequestSchema = z.object({
+  id: z.string().optional(),
+  employeeId: z.string().min(1, "Employee is required"),
+  attendanceId: z.string().nullable().optional(),
+  requestType: z.enum(attendanceRequestTypes),
+  reason: z.string().trim().min(1, "Reason is required"),
+  notes: z.string().optional(),
+  status: z.enum(attendanceRequestStatuses),
+  approvedById: z.string().nullable().optional(),
+  approvedAt: z.string().nullable().optional(),
+  rejectionReason: z.string().nullable().optional(),
   createdAt: z.string().nullable().optional(),
   updatedAt: z.string().nullable().optional(),
 });

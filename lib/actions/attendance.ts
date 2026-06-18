@@ -69,6 +69,9 @@ export type AttendanceGridRow = {
     leaves: number;
     absents: number;
     halfDays: number;
+    wfh: number;
+    od: number;
+    outOfStation: number;
     holidays: number;
   };
 };
@@ -417,6 +420,9 @@ export async function getMonthlyAttendance(
         leaves: 0,
         absents: 0,
         halfDays: 0,
+        wfh: 0,
+        od: 0,
+        outOfStation: 0,
         holidays: 0,
       };
 
@@ -432,6 +438,9 @@ export async function getMonthlyAttendance(
         if (attendance.status === AttendanceStatus.LEAVE) totals.leaves += 1;
         if (attendance.status === AttendanceStatus.ABSENT) totals.absents += 1;
         if (attendance.status === AttendanceStatus.HALF_DAY) totals.halfDays += 1;
+        if (attendance.status === AttendanceStatus.WFH) totals.wfh += 1;
+        if (attendance.status === AttendanceStatus.OD) totals.od += 1;
+        if (attendance.status === AttendanceStatus.OUT_OF_STATION) totals.outOfStation += 1;
         if (attendance.status === AttendanceStatus.HOLIDAY) totals.holidays += 1;
       });
 
@@ -618,9 +627,12 @@ export async function getAttendanceDashboard() {
       acc.leaves += row.totals.leaves;
       acc.absents += row.totals.absents;
       acc.halfDays += row.totals.halfDays;
+      acc.wfh += row.totals.wfh;
+      acc.od += row.totals.od;
+      acc.outOfStation += row.totals.outOfStation;
       return acc;
     },
-    { present: 0, leaves: 0, absents: 0, halfDays: 0 },
+    { present: 0, leaves: 0, absents: 0, halfDays: 0, wfh: 0, od: 0, outOfStation: 0 },
   );
 
   return {

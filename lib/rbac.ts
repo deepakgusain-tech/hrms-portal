@@ -114,6 +114,10 @@ function isEmployeeDocumentsRoute(route: string) {
   return route === "/employee-documents";
 }
 
+function isAttendanceRequestRoute(route: string) {
+  return route === "/attendance/requests";
+}
+
 function isAdminUser(user: UserWithPermissions | null) {
   return !!user?.role?.name?.toLowerCase().includes("admin");
 }
@@ -164,6 +168,14 @@ export async function canAccess(route: string, action: PermissionAction) {
 
   if (canManageAllAttendance(user.role?.name) && isEodReportingRoute(route)) {
     return action !== "delete";
+  }
+
+  if (
+    isEmployeeUser(user) &&
+    isAttendanceRequestRoute(route) &&
+    ((await isCurrentEmployeeHr()) || (await isCurrentEmployeeManager()))
+  ) {
+    return action === "view" || action === "edit";
   }
 
   if (
@@ -247,6 +259,19 @@ export async function getRoutePermissions(route: string) {
     return {
       canView: true,
       canCreate: true,
+      canEdit: true,
+      canDelete: false,
+    };
+  }
+
+  if (
+    isEmployeeUser(user) &&
+    isAttendanceRequestRoute(route) &&
+    ((await isCurrentEmployeeHr()) || (await isCurrentEmployeeManager()))
+  ) {
+    return {
+      canView: true,
+      canCreate: false,
       canEdit: true,
       canDelete: false,
     };
@@ -367,6 +392,7 @@ export async function getAccessibleRoutes() {
       user.role?.roleModules.map((roleModule) => roleModule.module.route) || []
     );
     routes.add("/leave-requests");
+    routes.add("/attendance/requests");
     routes.add("/eod-reporting");
     routes.add("/dashboard-design");
     routes.add("/recruitment-intake");
@@ -395,6 +421,10 @@ export async function getAccessibleRoutes() {
     routes.add("/attendance/my");
     routes.add("/leave-requests/my");
     routes.add("/employee-documents");
+
+    if ((await isCurrentEmployeeHr()) || (await isCurrentEmployeeManager())) {
+      routes.add("/attendance/requests");
+    }
 
     if (await isCurrentEmployeeHr()) {
       routes.add("/recruitment-intake");
@@ -426,6 +456,7 @@ export async function getAccessibleRoutes() {
     );
 
     routes.add("/leave-requests");
+    routes.add("/attendance/requests");
     routes.add("/dashboard-design");
     routes.add("/project-tracking");
 
@@ -449,6 +480,9 @@ export async function getAccessibleRoutes() {
   routes.add("/project-tracking");
   if (canManageAllAttendance(user.role?.name)) {
     routes.add("/eod-reporting");
+  }
+  if ((await isCurrentEmployeeHr()) || (await isCurrentEmployeeManager())) {
+    routes.add("/attendance/requests");
   }
 
   return Array.from(routes);

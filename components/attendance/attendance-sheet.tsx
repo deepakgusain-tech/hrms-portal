@@ -40,6 +40,9 @@ const statusLabels: Record<string, string> = {
   ABSENT: "A",
   LEAVE: "L",
   HALF_DAY: "HD",
+  WFH: "WFH",
+  OD: "OD",
+  OUT_OF_STATION: "OOS",
   HOLIDAY: "H",
   "": "",
 };
@@ -49,6 +52,9 @@ const statusClasses: Record<string, string> = {
   ABSENT: "bg-rose-100 text-rose-700",
   LEAVE: "bg-amber-100 text-amber-700",
   HALF_DAY: "bg-sky-100 text-sky-700",
+  WFH: "bg-cyan-100 text-cyan-700",
+  OD: "bg-indigo-100 text-indigo-700",
+  OUT_OF_STATION: "bg-fuchsia-100 text-fuchsia-700",
   HOLIDAY: "bg-violet-100 text-violet-700",
   "": "bg-slate-100 text-slate-400",
 };
@@ -58,6 +64,9 @@ const statusTextClasses: Record<string, string> = {
   ABSENT: "border-rose-200 bg-rose-50 text-rose-700",
   LEAVE: "border-amber-200 bg-amber-50 text-amber-700",
   HALF_DAY: "border-sky-200 bg-sky-50 text-sky-700",
+  WFH: "border-cyan-200 bg-cyan-50 text-cyan-700",
+  OD: "border-indigo-200 bg-indigo-50 text-indigo-700",
+  OUT_OF_STATION: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
   HOLIDAY: "border-violet-200 bg-violet-50 text-violet-700",
   "": "border-slate-200 bg-slate-50 text-slate-400",
 };
@@ -80,6 +89,9 @@ function exportCsv(sheet: AttendanceMonthSheet) {
       "Leaves",
       "Absents",
       "Half Days",
+      "WFH",
+      "OD",
+      "Out Of Station",
       "Holidays",
     ],
     ...sheet.rows.map((row) => [
@@ -91,6 +103,9 @@ function exportCsv(sheet: AttendanceMonthSheet) {
       row.totals.leaves,
       row.totals.absents,
       row.totals.halfDays,
+      row.totals.wfh,
+      row.totals.od,
+      row.totals.outOfStation,
       row.totals.holidays,
     ]),
   ];
@@ -290,7 +305,7 @@ export function AttendanceSheet({
                   </p>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-5">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                   <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
                     <p className="text-xs font-medium uppercase text-emerald-700">
                       Present
@@ -329,6 +344,30 @@ export function AttendanceSheet({
                     </p>
                     <p className="mt-1 text-2xl font-semibold text-violet-700">
                       {compactRow.totals.holidays}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-cyan-100 bg-cyan-50 p-3">
+                    <p className="text-xs font-medium uppercase text-cyan-700">
+                      WFH
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-cyan-700">
+                      {compactRow.totals.wfh}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+                    <p className="text-xs font-medium uppercase text-indigo-700">
+                      OD
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-indigo-700">
+                      {compactRow.totals.od}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-3">
+                    <p className="text-xs font-medium uppercase text-fuchsia-700">
+                      Out Of Station
+                    </p>
+                    <p className="mt-1 text-2xl font-semibold text-fuchsia-700">
+                      {compactRow.totals.outOfStation}
                     </p>
                   </div>
                 </div>
@@ -383,6 +422,10 @@ export function AttendanceSheet({
                   <th className="px-3 py-3 text-center">P</th>
                   <th className="px-3 py-3 text-center">L</th>
                   <th className="px-3 py-3 text-center">A</th>
+                  <th className="px-3 py-3 text-center">HD</th>
+                  <th className="px-3 py-3 text-center">WFH</th>
+                  <th className="px-3 py-3 text-center">OD</th>
+                  <th className="px-3 py-3 text-center">OOS</th>
                 </tr>
               </thead>
               <tbody>
@@ -412,12 +455,16 @@ export function AttendanceSheet({
                     <td className="px-3 py-3 text-center font-semibold">{row.totals.present}</td>
                     <td className="px-3 py-3 text-center font-semibold">{row.totals.leaves}</td>
                     <td className="px-3 py-3 text-center font-semibold">{row.totals.absents}</td>
+                    <td className="px-3 py-3 text-center font-semibold">{row.totals.halfDays}</td>
+                    <td className="px-3 py-3 text-center font-semibold">{row.totals.wfh}</td>
+                    <td className="px-3 py-3 text-center font-semibold">{row.totals.od}</td>
+                    <td className="px-3 py-3 text-center font-semibold">{row.totals.outOfStation}</td>
                   </tr>
                 ))}
                 {!sheet.rows.length ? (
                   <tr>
                     <td
-                      colSpan={sheet.daysInMonth + 4}
+                      colSpan={sheet.daysInMonth + 8}
                       className="px-3 py-10 text-center text-slate-500"
                     >
                       No attendance records found.

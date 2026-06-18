@@ -30,6 +30,9 @@ function statusBadgeClass(status: string) {
   if (status === "ABSENT") return "bg-rose-100 text-rose-700";
   if (status === "LEAVE") return "bg-amber-100 text-amber-700";
   if (status === "HALF_DAY") return "bg-sky-100 text-sky-700";
+  if (status === "WFH") return "bg-cyan-100 text-cyan-700";
+  if (status === "OD") return "bg-indigo-100 text-indigo-700";
+  if (status === "OUT_OF_STATION") return "bg-fuchsia-100 text-fuchsia-700";
   return "bg-violet-100 text-violet-700";
 }
 
@@ -76,6 +79,9 @@ export function AttendanceHubPanel({
         if (record.status === "LEAVE") acc.leaves += 1;
         if (record.status === "ABSENT") acc.absents += 1;
         if (record.status === "HALF_DAY") acc.halfDays += 1;
+        if (record.status === "WFH") acc.wfh += 1;
+        if (record.status === "OD") acc.od += 1;
+        if (record.status === "OUT_OF_STATION") acc.outOfStation += 1;
         acc.employees += 1;
         return acc;
       },
@@ -84,13 +90,21 @@ export function AttendanceHubPanel({
         leaves: 0,
         absents: 0,
         halfDays: 0,
+        wfh: 0,
+        od: 0,
+        outOfStation: 0,
         employees: 0,
       },
     );
 
     return {
       ...counts,
-      exceptions: counts.absents + counts.halfDays,
+      exceptions:
+        counts.absents +
+        counts.halfDays +
+        counts.wfh +
+        counts.od +
+        counts.outOfStation,
     };
   }, [visibleRecords]);
 
@@ -196,6 +210,30 @@ export function AttendanceHubPanel({
             </p>
             <p className="mt-2 text-3xl font-semibold text-sky-700">
               {visibleSummary.halfDays}
+            </p>
+          </div>
+          <div className="rounded-lg border border-cyan-100 bg-cyan-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-cyan-700">
+              WFH
+            </p>
+            <p className="mt-2 text-3xl font-semibold text-cyan-700">
+              {visibleSummary.wfh}
+            </p>
+          </div>
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">
+              OD
+            </p>
+            <p className="mt-2 text-3xl font-semibold text-indigo-700">
+              {visibleSummary.od}
+            </p>
+          </div>
+          <div className="rounded-lg border border-fuchsia-100 bg-fuchsia-50 p-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-fuchsia-700">
+              Out Of Station
+            </p>
+            <p className="mt-2 text-3xl font-semibold text-fuchsia-700">
+              {visibleSummary.outOfStation}
             </p>
           </div>
           <div className="rounded-lg border border-rose-100 bg-rose-50 p-4">
